@@ -471,6 +471,7 @@ class MainViewModel(
 
             if (!isLoggedIn) {
                 checkFailuresAndEmitState()
+                reloadEmotesOnceAfterLaunch(channelList)
                 return@launch
             }
 
@@ -480,7 +481,16 @@ class MainViewModel(
             }
 
             checkFailuresAndEmitState()
+            reloadEmotesOnceAfterLaunch(channelList)
         }
+    }
+
+    // Runs the same full "Reload emotes" as the menu, once per app launch, right after the first data load
+    private fun reloadEmotesOnceAfterLaunch(channelList: List<UserName>) {
+        if (hasReloadedEmotesSinceLaunch) return
+        val channel = activeChannel.value ?: channelList.firstOrNull() ?: return
+        hasReloadedEmotesSinceLaunch = true
+        reloadEmotes(channel)
     }
 
     fun retryDataLoading(dataLoadingFailures: Set<DataLoadingFailure>, chatLoadingFailures: Set<ChatLoadingFailure>) {
@@ -919,6 +929,9 @@ class MainViewModel(
     companion object {
         private val TAG = MainViewModel::class.java.simpleName
         private val STREAM_REFRESH_RATE = 30.seconds
+
+        // Process-wide, so it happens once per app launch even if the screen is recreated
+        private var hasReloadedEmotesSinceLaunch = false
         private val STREAM_RETRY_DELAY = 5.seconds
     }
 }

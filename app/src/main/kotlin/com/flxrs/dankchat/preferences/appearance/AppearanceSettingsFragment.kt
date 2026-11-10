@@ -161,6 +161,7 @@ private fun AppearanceSettings(
                 buttonOpacityPercent = settings.buttonOpacityPercent,
                 buttonIdleOpacityPercent = settings.buttonIdleOpacityPercent,
                 splitHandleOpacityPercent = settings.splitHandleOpacityPercent,
+                layoutAnimationMs = settings.layoutAnimationMs,
                 showChangelogs = settings.showChangelogs,
                 onInteraction = onInteraction,
             )
@@ -178,6 +179,7 @@ private fun ComponentsCategory(
     buttonOpacityPercent: Int,
     buttonIdleOpacityPercent: Int,
     splitHandleOpacityPercent: Int,
+    layoutAnimationMs: Int,
     showChangelogs: Boolean,
     onInteraction: (AppearanceSettingsInteraction) -> Unit,
 ) {
@@ -233,6 +235,17 @@ private fun ComponentsCategory(
             onDrag = { handleOpacity = it },
             onDragFinished = { onInteraction(AppearanceSettingsInteraction.SplitHandleOpacity(handleOpacity.roundToInt())) },
             summary = stringResource(R.string.preference_split_handle_opacity_summary, handleOpacity.roundToInt()),
+        )
+        var layoutAnimation by remember(layoutAnimationMs) { mutableFloatStateOf(layoutAnimationMs.toFloat()) }
+        SliderPreferenceItem(
+            title = stringResource(R.string.preference_layout_animation_title),
+            value = layoutAnimation,
+            range = 0f..600f,
+            steps = 11,
+            displayValue = false,
+            onDrag = { layoutAnimation = it },
+            onDragFinished = { onInteraction(AppearanceSettingsInteraction.LayoutAnimation(layoutAnimation.roundToInt())) },
+            summary = stringResource(R.string.preference_layout_animation_summary, layoutAnimation.roundToInt()),
         )
         var fadeDelay by remember(buttonFadeDelaySeconds) { mutableFloatStateOf(buttonFadeDelaySeconds.toFloat()) }
         SliderPreferenceItem(

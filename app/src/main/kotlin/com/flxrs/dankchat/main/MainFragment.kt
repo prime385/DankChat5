@@ -68,6 +68,18 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
+import android.view.animation.PathInterpolator
+import androidx.transition.TransitionSet
+import androidx.transition.TransitionManager
+import androidx.transition.TransitionListenerAdapter
+import androidx.transition.Transition
+import androidx.transition.Slide
+import androidx.transition.Fade
+import androidx.transition.ChangeBounds
+import androidx.core.view.children
+import android.webkit.WebView
+import android.view.Gravity
+import android.animation.LayoutTransition
 import com.flxrs.dankchat.BuildConfig
 import com.flxrs.dankchat.DankChatViewModel
 import com.flxrs.dankchat.R
@@ -180,7 +192,10 @@ class MainFragment : Fragment() {
             when {
                 inputBottomSheetBehavior?.isVisible == true      -> inputBottomSheetBehavior?.handleBackInvoked()
                 fullscreenBottomSheetBehavior?.isVisible == true -> fullscreenBottomSheetBehavior?.handleBackInvoked()
-                mainViewModel.isFullscreen                       -> mainViewModel.toggleFullscreen()
+                mainViewModel.isFullscreen                       -> {
+                    animateNextLayoutChange()
+                    mainViewModel.toggleFullscreen()
+                }
             }
         }
 
@@ -310,6 +325,54 @@ class MainFragment : Fragment() {
     private var isIdle = false
     private var idleJob: Job? = null
 
+    // Animates the layout changes caused by the next stream/fullscreen toggle: the chat slides to its new
+    // size and position, the channel bar slides up/down and the stream player fades
+    private fun animateNextLayoutChange() {
+        val binding = bindingRef ?: return
+        val durationMs = appearanceSettingsDataStore.current().layoutAnimationMs.coerceIn(0, 600)
+        if (durationMs == 0) return
+        val root = binding.root as? ViewGroup ?: return
+        TransitionManager.endTransitions(root)
+
+        // Built-in layout fades would fight this animation, so pause them until it has finished
+        val pausedLayoutTransitions = mutableListOf<Pair<ViewGroup, LayoutTransition>>()
+        fun pauseLayoutTransitions(group: ViewGroup) {
+            group.layoutTransition?.let {
+                pausedLayoutTransitions += group to it
+                group.layoutTransition = null
+            }
+            group.children.forEach { child ->
+                if (child is ViewGroup && child !is RecyclerView && child !is ViewPager2 && child !is WebView) {
+                    pauseLayoutTransitions(child)
+                }
+            }
+        }
+        pauseLayoutTransitions(root)
+        val restoreLayoutTransitions = {
+            pausedLayoutTransitions.forEach { (group, layoutTransition) -> group.layoutTransition = layoutTransition }
+            pausedLayoutTransitions.clear()
+        }
+
+        val transition = TransitionSet().apply {
+            ordering = TransitionSet.ORDERING_TOGETHER
+            addTransition(Slide(Gravity.TOP).addTarget(binding.toolbar).addTarget(binding.tabs))
+            addTransition(Fade().addTarget(binding.streamWebviewWrapper))
+            addTransition(
+                ChangeBounds()
+                    .excludeTarget(binding.streamWebviewWrapper, true)
+                    .excludeTarget(binding.toolbar, true)
+                    .excludeTarget(binding.tabs, true)
+            )
+            duration = durationMs.toLong()
+            interpolator = PathInterpolator(0.4f, 0f, 0.2f, 1f) // Material "fast out, slow in"
+            addListener(object : TransitionListenerAdapter() {
+                override fun onTransitionEnd(transition: Transition) = restoreLayoutTransitions()
+                override fun onTransitionCancel(transition: Transition) = restoreLayoutTransitions()
+            })
+        }
+        TransitionManager.beginDelayedTransition(root, transition)
+    }
+
     private fun restartIdleTimer() {
         idleJob?.cancel()
         if (isIdle) {
@@ -399,7 +462,10 @@ class MainFragment : Fragment() {
             tabs.onTabViewsRestyled = Runnable { applyLiveTabColors() }
 
             addChannelsButton.setOnClickListener { navigateSafe(R.id.action_mainFragment_to_addChannelDialogFragment) }
-            toggleFullscreen.setOnClickListener { mainViewModel.toggleFullscreen() }
+            toggleFullscreen.setOnClickListener {
+                animateNextLayoutChange()
+                mainViewModel.toggleFullscreen()
+            }
             toggleInput.setOnClickListener { mainViewModel.toggleInput() }
             toggleAppSwitch.setOnClickListener { switchToChosenApp() }
             toggleAppSwitch.setOnLongClickListener {
@@ -407,6 +473,7 @@ class MainFragment : Fragment() {
                 true
             }
             toggleStream.setOnClickListener {
+                animateNextLayoutChange()
                 val wasStreamActive = mainViewModel.isStreamActive
                 mainViewModel.toggleStream()
                 // The stream button toggles fullscreen along with the stream: on enters it, off leaves it

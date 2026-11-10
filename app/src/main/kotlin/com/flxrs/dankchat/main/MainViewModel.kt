@@ -124,6 +124,10 @@ class MainViewModel(
     private val inputSheetState = MutableStateFlow<InputSheetState>(InputSheetState.Closed)
     private val fullScreenSheetState = MutableStateFlow<FullScreenSheetState>(FullScreenSheetState.Closed)
     private val _currentStreamedChannel = MutableStateFlow<UserName?>(null)
+    // Audio-only: the stream plays with its video hidden (started by long-pressing the Stream button)
+    private val _isAudioOnly = MutableStateFlow(false)
+    val isAudioOnlyFlow: StateFlow<Boolean> = _isAudioOnly.asStateFlow()
+    val isAudioOnly: Boolean get() = _isAudioOnly.value
     private val _isFullscreen = MutableStateFlow(false)
     private val _isLandscape = MutableStateFlow(false)
     private val isInputFocused = MutableStateFlow(false)
@@ -205,6 +209,7 @@ class MainViewModel(
         .onEach { channels ->
             if (channels != null && _currentStreamedChannel.value !in channels) {
                 _currentStreamedChannel.value = null
+                _isAudioOnly.value = false
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), null)
@@ -261,8 +266,8 @@ class MainViewModel(
     val shouldShowViewPager: StateFlow<Boolean> = channels.mapLatest { it?.isNotEmpty() != false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), true)
 
-    val shouldShowTabs: StateFlow<Boolean> = combine(shouldShowViewPager, _isFullscreen, _isLandscape, _currentStreamedChannel) { shouldShowViewPager, isFullscreen, isLandscape, currentStream ->
-        shouldShowViewPager && !isFullscreen && !(isLandscape && currentStream != null)
+    val shouldShowTabs: StateFlow<Boolean> = combine(shouldShowViewPager, _isFullscreen, _isLandscape, _currentStreamedChannel, _isAudioOnly) { shouldShowViewPager, isFullscreen, isLandscape, currentStream, isAudioOnly ->
+        shouldShowViewPager && !isFullscreen && !(isLandscape && currentStream != null && !isAudioOnly)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), true)
 
     val shouldShowInput: StateFlow<Boolean> = combine(
@@ -400,8 +405,9 @@ class MainViewModel(
     val shouldEnablePictureInPictureAutoMode: StateFlow<Boolean> = combine(
         currentStreamedChannel,
         streamsSettingsDataStore.pipEnabled,
-    ) { currentStream, pipEnabled ->
-        currentStream != null && pipEnabled
+        _isAudioOnly,
+    ) { currentStream, pipEnabled, isAudioOnly ->
+        currentStream != null && pipEnabled && !isAudioOnly
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), false)
 
     val isStreamActive: Boolean
@@ -771,6 +777,7 @@ class MainViewModel(
     }
 
     fun setCurrentStream(value: UserName?) {
+        _isAudioOnly.value = false
         _currentStreamedChannel.update { value }
     }
 
@@ -781,6 +788,16 @@ class MainViewModel(
                 else -> null
             }
         }
+        if (_currentStreamedChannel.value == null) {
+            _isAudioOnly.value = false
+        }
+    }
+
+    fun startAudioOnlyStream() {
+        if (_currentStreamedChannel.value != null) return
+        val channel = activeChannel.value ?: return
+        _isAudioOnly.value = true
+        _currentStreamedChannel.value = channel
     }
 
     fun setInputFocus(value: Boolean) {

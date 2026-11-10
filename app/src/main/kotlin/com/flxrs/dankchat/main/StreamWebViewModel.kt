@@ -30,7 +30,7 @@ class StreamWebViewModel(
         }
     }
 
-    fun setStream(channel: UserName?, webView: StreamWebView) {
+    fun setStream(channel: UserName?, webView: StreamWebView, audioOnly: Boolean = false) {
         if (!streamsSettingsDataStore.current().preventStreamReloads) {
             // Clear previous retained WebView instance
             streamWebView?.let {
@@ -39,7 +39,7 @@ class StreamWebViewModel(
                 lastStreamedChannel = null
             }
 
-            webView.setStream(channel, streamsSettingsDataStore.current().showStreamExtensions)
+            webView.setStream(channel, streamsSettingsDataStore.current().showStreamExtensions, audioOnly)
             return
         }
 
@@ -49,7 +49,7 @@ class StreamWebViewModel(
         }
 
         lastStreamedChannel = channel
-        webView.setStream(channel, streamsSettingsDataStore.current().showStreamExtensions)
+        webView.setStream(channel, streamsSettingsDataStore.current().showStreamExtensions, audioOnly)
     }
 
     val splitFraction: Float

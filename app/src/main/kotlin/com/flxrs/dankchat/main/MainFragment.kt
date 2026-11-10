@@ -152,6 +152,7 @@ import com.google.android.material.transition.MaterialSharedAxis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.flxrs.dankchat.preferences.appearance.AppearanceSettingsDataStore
@@ -514,6 +515,17 @@ class MainFragment : Fragment() {
                 }
                 root.requestApplyInsets()
             }
+            // Long-press: start the stream audio-only (video hidden, no fullscreen). Tap turns it off as usual.
+            toggleStream.setOnLongClickListener {
+                if (mainViewModel.isStreamActive) {
+                    toggleStream.performClick()
+                } else {
+                    animateNextLayoutChange()
+                    mainViewModel.startAudioOnlyStream()
+                    root.requestApplyInsets()
+                }
+                true
+            }
             var offset = 0f
             splitThumb?.setOnTouchListener { v, event ->
                 when (event.actionMasked) {
@@ -657,9 +669,11 @@ class MainFragment : Fragment() {
             collectFlow(liveChannels) { binding.tabs.post { applyLiveTabColors() } }
             collectFlow(shouldColorNotification) { activity?.invalidateMenu() }
             collectFlow(channels, mainViewModel::fetchStreamData)
-            collectFlow(currentStreamedChannel) {
-                val isActive = it != null
+            collectFlow(combine(currentStreamedChannel, isAudioOnlyFlow, ::Pair)) { (channel, audioOnly) ->
+                // Audio-only keeps the player running but hidden (as when typing in landscape), so the chat gets the space
+                val isActive = channel != null && !audioOnly
                 binding.streamWebviewWrapper.isVisible = isActive
+                binding.toggleStream.setChipIconResource(if (channel != null && audioOnly) R.drawable.ic_headphones else R.drawable.ic_live_tv)
                 if (!isLandscape) {
                     return@collectFlow
                 }
@@ -807,13 +821,13 @@ class MainFragment : Fragment() {
 
                     val isRtl = v.layoutDirection == View.LAYOUT_DIRECTION_RTL
                     val left = when {
-                        mainViewModel.isFullscreen && (v.resources.isPortrait || isRtl || !mainViewModel.isStreamActive) -> bottomLeft.center.x
+                        mainViewModel.isFullscreen && (v.resources.isPortrait || isRtl || !mainViewModel.isStreamActive || mainViewModel.isAudioOnly) -> bottomLeft.center.x
                         else                                                                                 -> 8.px
                     }
 
                     val screenWidth = window.decorView.width
                     val right = when {
-                        mainViewModel.isFullscreen && (v.resources.isPortrait || !isRtl || !mainViewModel.isStreamActive) -> screenWidth - bottomRight.center.x
+                        mainViewModel.isFullscreen && (v.resources.isPortrait || !isRtl || !mainViewModel.isStreamActive || mainViewModel.isAudioOnly) -> screenWidth - bottomRight.center.x
                         else                                                                                  -> 8.px
                     }
 
@@ -1326,7 +1340,7 @@ class MainFragment : Fragment() {
         // Keep a running stream playing in a small window: the other app is opened first, and DankChat
         // shrinks into picture-in-picture when Android reports it is leaving the screen (onUserLeaveHint)
         val mainActivity = activity as? MainActivity
-        mainActivity?.enterPictureInPictureOnLeave = mainViewModel.isStreamActive && !isInPictureInPictureMode
+        mainActivity?.enterPictureInPictureOnLeave = mainViewModel.isStreamActive && !mainViewModel.isAudioOnly && !isInPictureInPictureMode
 
         launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         runCatching { startActivity(launchIntent) }.onFailure {
@@ -1666,7 +1680,7 @@ class MainFragment : Fragment() {
             splitThumb?.isVisible = !isInPictureInPicture && streamWebviewWrapper.isVisible
             splitGuideline?.updateLayoutParams<ConstraintLayout.LayoutParams> {
                 guidePercent = when {
-                    !mainViewModel.isStreamActive -> DISABLED_GUIDELINE_PERCENT
+                    !mainViewModel.isStreamActive || mainViewModel.isAudioOnly -> DISABLED_GUIDELINE_PERCENT
                     isInPictureInPicture          -> PIP_GUIDELINE_PERCENT
                     else                          -> savedGuidelinePercent
                 }
@@ -1846,7 +1860,7 @@ class MainFragment : Fragment() {
 
             val hasHardwareKeyboard = resources.configuration.keyboard != Configuration.KEYBOARD_NOKEYS
             binding.tabs.isVisible = (!hasFocus || hasHardwareKeyboard) && mainViewModel.shouldShowTabs.value
-            binding.streamWebviewWrapper.isVisible = (!hasFocus || hasHardwareKeyboard) && !mainViewModel.isEmoteSheetOpen && mainViewModel.isStreamActive
+            binding.streamWebviewWrapper.isVisible = (!hasFocus || hasHardwareKeyboard) && !mainViewModel.isEmoteSheetOpen && mainViewModel.isStreamActive && !mainViewModel.isAudioOnly
             when {
                 hasFocus      -> (activity as? MainActivity)?.supportActionBar?.hide()
                 !isFullscreen -> (activity as? MainActivity)?.supportActionBar?.show()

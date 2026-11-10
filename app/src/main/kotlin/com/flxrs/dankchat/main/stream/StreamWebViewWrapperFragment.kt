@@ -14,6 +14,7 @@ import com.flxrs.dankchat.databinding.FragmentStreamWebViewWrapperBinding
 import com.flxrs.dankchat.main.MainViewModel
 import com.flxrs.dankchat.main.StreamWebViewModel
 import com.flxrs.dankchat.utils.extensions.collectFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -43,8 +44,8 @@ class StreamWebViewWrapperFragment : Fragment() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
             )
         )
-        collectFlow(mainViewModel.currentStreamedChannel) {
-            streamWebViewModel.setStream(it, streamWebView)
+        collectFlow(combine(mainViewModel.currentStreamedChannel, mainViewModel.isAudioOnlyFlow, ::Pair)) { (channel, audioOnly) ->
+            streamWebViewModel.setStream(channel, streamWebView, audioOnly)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             viewLifecycleOwner.lifecycleScope.launch {

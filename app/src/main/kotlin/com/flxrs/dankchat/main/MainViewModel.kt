@@ -129,7 +129,6 @@ class MainViewModel(
     private val _isLandscape = MutableStateFlow(false)
     private val isInputFocused = MutableStateFlow(false)
     private val isScrolling = MutableStateFlow(false)
-    private val chipsExpanded = MutableStateFlow(false)
     private val repeatedSend = MutableStateFlow(RepeatedSendData(enabled = false, message = ""))
 
     private val emotes = currentSuggestionChannel
@@ -359,32 +358,17 @@ class MainViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), EmoteMenuTab.entries.map { EmoteMenuTabItem(it, emptyList()) })
 
     val isFullscreenFlow: StateFlow<Boolean> = _isFullscreen.asStateFlow()
-    val areChipsExpanded: StateFlow<Boolean> = chipsExpanded.asStateFlow()
+    val shouldShowChipToggle: StateFlow<Boolean> = appearanceSettingsDataStore.showChips
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), true)
 
-    val shouldShowChipToggle: StateFlow<Boolean> = combine(
-        appearanceSettingsDataStore.showChips,
-        isScrolling,
-    ) { shouldShowChips, isScrolling ->
-        shouldShowChips && !isScrolling
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), true)
-
-    val shouldShowExpandedChips: StateFlow<Boolean> = combine(shouldShowChipToggle, chipsExpanded) { shouldShowChips, chipsExpanded ->
-        shouldShowChips && chipsExpanded
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), false)
-
-    val shouldShowStreamToggle: StateFlow<Boolean> =
+    // A stream can be toggled when the active channel is live, or a stream is already open
+    val isStreamAvailable: StateFlow<Boolean> =
         combine(
-            shouldShowExpandedChips,
             activeChannel,
             _currentStreamedChannel,
             streamData
-        ) { canShowChips, activeChannel, currentStream, streamData ->
-            canShowChips && activeChannel != null && (currentStream != null || streamData.find { it.channel == activeChannel } != null)
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), false)
-
-    val hasModInChannel: StateFlow<Boolean> =
-        combine(shouldShowExpandedChips, activeChannel, userStateRepository.userState) { canShowChips, channel, userState ->
-            canShowChips && channel != null && channel in userState.moderationChannels
+        ) { activeChannel, currentStream, streamData ->
+            activeChannel != null && (currentStream != null || streamData.find { it.channel == activeChannel } != null)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), false)
 
     val useCustomBackHandling: StateFlow<Boolean> = combine(isFullscreenFlow, inputSheetState, fullScreenSheetState) { isFullscreen, inputSheetState, chatSheetState ->
@@ -749,7 +733,6 @@ class MainViewModel(
     }
 
     fun toggleStream() {
-        chipsExpanded.update { false }
         _currentStreamedChannel.update {
             when (it) {
                 null -> activeChannel.value
@@ -763,7 +746,6 @@ class MainViewModel(
     }
 
     fun toggleFullscreen() {
-        chipsExpanded.update { false }
         _isFullscreen.update { !it }
     }
 
@@ -779,10 +761,6 @@ class MainViewModel(
 
     fun isScrolling(value: Boolean) {
         isScrolling.value = value
-    }
-
-    fun toggleChipsExpanded() {
-        chipsExpanded.update { !it }
     }
 
     fun changeRoomState(index: Int, enabled: Boolean, time: String = "") {

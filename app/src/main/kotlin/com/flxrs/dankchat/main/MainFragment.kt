@@ -345,8 +345,6 @@ class MainFragment : Fragment() {
                 mainViewModel.toggleStream()
                 root.requestApplyInsets()
             }
-            changeRoomstate.setOnClickListener { showRoomStateDialog() }
-            showChips.setOnClickListener { mainViewModel.toggleChipsExpanded() }
             var offset = 0f
             splitThumb?.setOnTouchListener { v, event ->
                 when (event.actionMasked) {
@@ -448,17 +446,21 @@ class MainFragment : Fragment() {
                 mainViewModel.clearUnreadMessage(channel)
             }
             collectFlow(shouldShowTabs) { binding.tabs.isVisible = it && !isInPictureInPictureMode }
-            collectFlow(shouldShowChipToggle) { binding.showChips.isVisible = it }
-            collectFlow(areChipsExpanded) {
-                val resourceId = if (it) R.drawable.ic_keyboard_arrow_up else R.drawable.ic_keyboard_arrow_down
-                binding.showChips.setChipIconResource(resourceId)
+            collectFlow(shouldShowChipToggle) {
+                val visible = it && !isInPictureInPictureMode
+                binding.toggleFullscreen.isVisible = visible
+                binding.toggleInput.isVisible = visible
+                binding.toggleStream.isVisible = visible
             }
-            collectFlow(shouldShowExpandedChips) {
-                binding.toggleFullscreen.isVisible = it
-                binding.toggleInput.isVisible = it
+            collectFlow(isFullscreenFlow) {
+                val resourceId = if (it) R.drawable.ic_fullscreen_exit else R.drawable.ic_fullscreen
+                binding.toggleFullscreen.setChipIconResource(resourceId)
             }
-            collectFlow(shouldShowStreamToggle) { binding.toggleStream.isVisible = it }
-            collectFlow(hasModInChannel) { binding.changeRoomstate.isVisible = it }
+            // Greyed out and not tappable while there is no stream to show
+            collectFlow(isStreamAvailable) {
+                binding.toggleStream.isEnabled = it
+                binding.toggleStream.alpha = if (it) TOGGLE_BUTTON_ALPHA else TOGGLE_BUTTON_DISABLED_ALPHA
+            }
             collectFlow(shouldShowViewPager) {
                 binding.chatViewpager.isVisible = it && !isInPictureInPictureMode
                 binding.addChannelsText.isVisible = !it
@@ -584,7 +586,7 @@ class MainFragment : Fragment() {
             setSupportActionBar(binding.toolbar)
             onBackPressedDispatcher.addCallback(viewLifecycleOwner, onBackPressedCallback)
 
-            ViewCompat.setOnApplyWindowInsetsListener(binding.showChips) { v, insets ->
+            ViewCompat.setOnApplyWindowInsetsListener(binding.toggleFullscreen) { v, insets ->
                 // additional margin for chips because of display cutouts/punch holes
                 val needsExtraMargin = bindingRef?.streamWebviewWrapper?.isVisible == true || v.resources.isLandscape || !mainViewModel.isFullscreen
                 val extraMargin = when {
@@ -1349,7 +1351,10 @@ class MainFragment : Fragment() {
             inputSheetFragment.isVisible = !isInPictureInPicture
             inputLayout.isVisible = !isInPictureInPicture && mainViewModel.shouldShowInput.value
             fullscreenHintText.isVisible = !isInPictureInPicture && mainViewModel.shouldShowFullscreenHelper.value
-            showChips.isVisible = !isInPictureInPicture && mainViewModel.shouldShowChipToggle.value
+            val showToggles = !isInPictureInPicture && mainViewModel.shouldShowChipToggle.value
+            toggleFullscreen.isVisible = showToggles
+            toggleInput.isVisible = showToggles
+            toggleStream.isVisible = showToggles
             splitThumb?.isVisible = !isInPictureInPicture && streamWebviewWrapper.isVisible
             splitGuideline?.updateLayoutParams<ConstraintLayout.LayoutParams> {
                 guidePercent = when {
@@ -1543,6 +1548,8 @@ class MainFragment : Fragment() {
 
     companion object {
         private const val DISABLED_GUIDELINE_PERCENT = 0f
+        private const val TOGGLE_BUTTON_ALPHA = 0.7f
+        private const val TOGGLE_BUTTON_DISABLED_ALPHA = 0.3f
         private const val DEFAULT_GUIDELINE_PERCENT = 0.6f
         private const val PIP_GUIDELINE_PERCENT = 1f
         private const val MAX_GUIDELINE_PERCENT = 0.8f

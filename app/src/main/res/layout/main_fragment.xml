@@ -55,51 +55,49 @@
                 app:layout_constraintVertical_chainStyle="spread" />
 
             <com.google.android.material.chip.Chip
-                android:id="@+id/show_chips"
+                android:id="@+id/toggle_fullscreen"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                app:iconEndPadding="0dp"
+                android:alpha="0.7"
+                android:contentDescription="@string/toggle_fullscreen"
+                app:chipIcon="@drawable/ic_fullscreen"
+                app:iconEndPadding="-2dp"
+                app:iconStartPadding="-2dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/stream_webview_wrapper"
                 app:textEndPadding="0dp"
                 app:textStartPadding="0dp" />
 
             <com.google.android.material.chip.Chip
-                android:id="@+id/toggle_fullscreen"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:text="@string/toggle_fullscreen"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/show_chips" />
-
-            <com.google.android.material.chip.Chip
                 android:id="@+id/toggle_input"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:text="@string/toggle_input"
+                android:alpha="0.7"
+                android:contentDescription="@string/toggle_input"
+                app:chipIcon="@drawable/ic_keyboard"
+                app:iconEndPadding="-2dp"
+                app:iconStartPadding="-2dp"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/toggle_fullscreen" />
+                app:layout_constraintTop_toBottomOf="@id/toggle_fullscreen"
+                app:textEndPadding="0dp"
+                app:textStartPadding="0dp" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/toggle_stream"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:text="@string/toggle_stream"
+                android:alpha="0.7"
+                android:contentDescription="@string/toggle_stream"
+                app:chipIcon="@drawable/ic_live_tv"
+                app:iconEndPadding="-2dp"
+                app:iconStartPadding="-2dp"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/toggle_input" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/change_roomstate"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:text="@string/change_roomstate"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/toggle_stream" />
+                app:layout_constraintTop_toBottomOf="@id/toggle_input"
+                app:textEndPadding="0dp"
+                app:textStartPadding="0dp" />
 
             <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/chat_viewpager"

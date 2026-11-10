@@ -142,6 +142,21 @@
                 app:textStartPadding="0dp" />
 
             <com.google.android.material.chip.Chip
+                android:id="@+id/toggle_app_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:alpha="0.7"
+                android:contentDescription="@string/app_switch"
+                app:chipIcon="@drawable/ic_app_switch"
+                app:iconEndPadding="-2dp"
+                app:iconStartPadding="-2dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/toggle_fullscreen"
+                app:textEndPadding="0dp"
+                app:textStartPadding="0dp" />
+
+            <com.google.android.material.chip.Chip
                 android:id="@+id/toggle_input"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -152,7 +167,7 @@
                 app:iconEndPadding="-2dp"
                 app:iconStartPadding="-2dp"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/toggle_fullscreen"
+                app:layout_constraintTop_toBottomOf="@id/toggle_app_switch"
                 app:textEndPadding="0dp"
                 app:textStartPadding="0dp" />
 

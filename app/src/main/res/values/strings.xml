@@ -3,6 +3,11 @@
     <string name="app_name">DankChat</string>
     <string name="app_name_dank">DankChat (Dank)</string>
     <string name="app_name_custom" translatable="false">DankChat Custom</string>
+    <string name="app_switch" translatable="false">Switch to app</string>
+    <string name="app_switch_choose_title" translatable="false">Choose app for the switch button</string>
+    <string name="app_switch_clear" translatable="false">Remove</string>
+    <string name="app_switch_hint" translatable="false">Tap the button to switch to %1$s. Long-press it to choose a different app.</string>
+    <string name="app_switch_not_found" translatable="false">That app is no longer installed. Choose another one.</string>
     <string name="settings_backup_export" translatable="false">Export settings</string>
     <string name="settings_backup_export_summary" translatable="false">Save settings, channels, highlights and ignores to a file (login not included)</string>
     <string name="settings_backup_export_success" translatable="false">Settings exported</string>

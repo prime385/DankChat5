@@ -6,7 +6,11 @@ import android.app.PictureInPictureParams
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.graphics.drawable.Drawable
+import android.widget.ArrayAdapter
+import android.widget.Toast
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
@@ -133,7 +137,10 @@ import com.google.android.material.snackbar.BaseTransientBottomBar.BaseCallback
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.flxrs.dankchat.preferences.appearance.AppearanceSettingsDataStore
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -157,6 +164,7 @@ class MainFragment : Fragment() {
     private val chatSettingsDataStore: ChatSettingsDataStore by inject()
     private val developerSettingsDataStore: DeveloperSettingsDataStore by inject()
     private val toolsSettingsDataStore: ToolsSettingsDataStore by inject()
+    private val appearanceSettingsDataStore: AppearanceSettingsDataStore by inject()
     private val notificationsSettingsDataStore: NotificationsSettingsDataStore by inject()
     private val dankChatPreferences: DankChatPreferenceStore by inject()
     private val navController: NavController by lazy { findNavController() }
@@ -341,6 +349,11 @@ class MainFragment : Fragment() {
             addChannelsButton.setOnClickListener { navigateSafe(R.id.action_mainFragment_to_addChannelDialogFragment) }
             toggleFullscreen.setOnClickListener { mainViewModel.toggleFullscreen() }
             toggleInput.setOnClickListener { mainViewModel.toggleInput() }
+            toggleAppSwitch.setOnClickListener { switchToChosenApp() }
+            toggleAppSwitch.setOnLongClickListener {
+                showAppSwitchPicker()
+                true
+            }
             toggleStream.setOnClickListener {
                 mainViewModel.toggleStream()
                 root.requestApplyInsets()
@@ -450,6 +463,7 @@ class MainFragment : Fragment() {
                 val visible = it && !isInPictureInPictureMode
                 binding.toggleFullscreen.isVisible = visible
                 binding.toggleInput.isVisible = visible
+                binding.toggleAppSwitch.isVisible = visible
                 binding.toggleStream.isVisible = visible
             }
             collectFlow(isFullscreenFlow) {
@@ -1118,6 +1132,98 @@ class MainFragment : Fragment() {
         }
     }
 
+    private data class LaunchableApp(val packageName: String, val label: String, val icon: Drawable)
+
+    private fun switchToChosenApp() {
+        val packageName = appearanceSettingsDataStore.current().appSwitchPackage
+        if (packageName == null) {
+            showAppSwitchPicker()
+            return
+        }
+
+        val activity = activity ?: return
+        val launchIntent = activity.packageManager.getLaunchIntentForPackage(packageName)
+        if (launchIntent == null) {
+            Toast.makeText(activity, R.string.app_switch_not_found, Toast.LENGTH_LONG).show()
+            showAppSwitchPicker()
+            return
+        }
+
+        // Keep a running stream playing in a small window instead of stopping it in the background
+        if (mainViewModel.isStreamActive && !isInPictureInPictureMode && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            activity.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+        ) {
+            runCatching {
+                activity.enterPictureInPictureMode(
+                    PictureInPictureParams.Builder()
+                        .setAspectRatio(Rational(16, 9))
+                        .build()
+                )
+            }
+        }
+
+        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { startActivity(launchIntent) }.onFailure {
+            Toast.makeText(activity, R.string.app_switch_not_found, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun showAppSwitchPicker() {
+        val context = context ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val apps = withContext(Dispatchers.IO) { loadLaunchableApps(context) }
+            if (!isAdded) return@launch
+
+            val iconSize = 32.px
+            val adapter = object : ArrayAdapter<LaunchableApp>(context, android.R.layout.select_dialog_item, apps) {
+                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                    val view = super.getView(position, convertView, parent) as TextView
+                    val app = apps[position]
+                    view.text = app.label
+                    val icon = app.icon.constantState?.newDrawable()?.mutate() ?: app.icon
+                    icon.setBounds(0, 0, iconSize, iconSize)
+                    view.setCompoundDrawablesRelative(icon, null, null, null)
+                    view.compoundDrawablePadding = 16.px
+                    return view
+                }
+            }
+
+            val hasChoice = appearanceSettingsDataStore.current().appSwitchPackage != null
+            MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.app_switch_choose_title)
+                .setAdapter(adapter) { _, which -> setAppSwitchPackage(apps[which]) }
+                .setNegativeButton(R.string.dialog_cancel, null)
+                .apply {
+                    if (hasChoice) {
+                        setNeutralButton(R.string.app_switch_clear) { _, _ -> setAppSwitchPackage(null) }
+                    }
+                }
+                .show()
+        }
+    }
+
+    private fun setAppSwitchPackage(app: LaunchableApp?) {
+        val context = context?.applicationContext ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            appearanceSettingsDataStore.update { it.copy(appSwitchPackage = app?.packageName) }
+            if (app != null) {
+                Toast.makeText(context, context.getString(R.string.app_switch_hint, app.label), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun loadLaunchableApps(context: android.content.Context): List<LaunchableApp> {
+        val packageManager = context.packageManager
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        return packageManager.queryIntentActivities(intent, 0)
+            .asSequence()
+            .filter { it.activityInfo.packageName != context.packageName }
+            .distinctBy { it.activityInfo.packageName }
+            .map { LaunchableApp(it.activityInfo.packageName, it.loadLabel(packageManager).toString(), it.loadIcon(packageManager)) }
+            .sortedBy { it.label.lowercase() }
+            .toList()
+    }
+
     private fun changeActionBarVisibility(isFullscreen: Boolean) {
         if (isInPictureInPictureMode) {
             return
@@ -1355,6 +1461,7 @@ class MainFragment : Fragment() {
             val showToggles = !isInPictureInPicture && mainViewModel.shouldShowChipToggle.value
             toggleFullscreen.isVisible = showToggles
             toggleInput.isVisible = showToggles
+            toggleAppSwitch.isVisible = showToggles
             toggleStream.isVisible = showToggles
             splitThumb?.isVisible = !isInPictureInPicture && streamWebviewWrapper.isVisible
             splitGuideline?.updateLayoutParams<ConstraintLayout.LayoutParams> {

@@ -14,6 +14,7 @@ data class AppearanceSettings(
     val autoDisableInput: Boolean = true,
     val showChips: Boolean = true,
     val showChangelogs: Boolean = true,
+    val appSwitchPackage: String? = null,
 )
 
 enum class ThemePreference { System, Dark, Light }

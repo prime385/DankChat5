@@ -1,6 +1,11 @@
 package com.flxrs.dankchat.preferences.overview
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,6 +25,8 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.DeveloperMode
 import androidx.compose.material.icons.filled.FiberNew
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Palette
@@ -52,6 +59,7 @@ import com.flxrs.dankchat.R
 import com.flxrs.dankchat.changelog.DankChatVersion
 import com.flxrs.dankchat.main.MainFragment
 import com.flxrs.dankchat.preferences.DankChatPreferenceStore
+import com.flxrs.dankchat.preferences.backup.SettingsBackupManager
 import com.flxrs.dankchat.preferences.components.NavigationBarSpacer
 import com.flxrs.dankchat.preferences.components.PreferenceCategoryTitle
 import com.flxrs.dankchat.preferences.components.PreferenceCategoryWithSummary
@@ -61,7 +69,12 @@ import com.flxrs.dankchat.theme.DankChatTheme
 import com.flxrs.dankchat.utils.compose.buildClickableAnnotation
 import com.flxrs.dankchat.utils.compose.buildLinkAnnotation
 import com.flxrs.dankchat.utils.extensions.navigateSafe
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialFadeThrough
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
 import com.google.android.material.transition.MaterialSharedAxis
 import org.koin.android.ext.android.inject
 
@@ -70,6 +83,69 @@ class OverviewSettingsFragment : Fragment() {
     private val navController: NavController by lazy { findNavController() }
 
     private val dankChatPreferences: DankChatPreferenceStore by inject()
+    private val settingsBackupManager: SettingsBackupManager by inject()
+
+    private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri?.let(::exportSettings)
+    }
+    private val importLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let(::confirmImportSettings)
+    }
+
+    private fun exportSettings(uri: Uri) {
+        val context = requireContext().applicationContext
+        lifecycleScope.launch {
+            val result = runCatching {
+                val content = settingsBackupManager.export(BuildConfig.VERSION_NAME)
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri, "wt")?.use { it.write(content.toByteArray()) } ?: error("Could not open file")
+                }
+            }
+            val message = if (result.isSuccess) R.string.settings_backup_export_success else R.string.settings_backup_export_failed
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun confirmImportSettings(uri: Uri) {
+        val context = requireContext().applicationContext
+        lifecycleScope.launch {
+            // Read and check the whole file before anything is changed
+            val backup = runCatching {
+                val content = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() } ?: error("Could not open file")
+                }
+                settingsBackupManager.parse(content)
+            }.getOrElse {
+                Toast.makeText(context, R.string.settings_backup_import_invalid, Toast.LENGTH_LONG).show()
+                return@launch
+            }
+
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.settings_backup_import_title)
+                .setMessage(R.string.settings_backup_import_message)
+                .setNegativeButton(R.string.dialog_cancel, null)
+                .setPositiveButton(R.string.settings_backup_import_confirm) { _, _ ->
+                    lifecycleScope.launch {
+                        val result = runCatching { settingsBackupManager.import(backup) }
+                        if (result.isFailure) {
+                            Toast.makeText(context, R.string.settings_backup_import_failed, Toast.LENGTH_LONG).show()
+                            return@launch
+                        }
+                        restartApp()
+                    }
+                }
+                .show()
+        }
+    }
+
+    // Channels and lists are loaded at startup, so the app restarts to apply the imported backup
+    private fun restartApp() {
+        val context = requireContext().applicationContext
+        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        context.startActivity(intent)
+        Runtime.getRuntime().exit(0)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,6 +165,8 @@ class OverviewSettingsFragment : Fragment() {
                         hasChangelog = DankChatVersion.HAS_CHANGELOG,
                         onBackPressed = { navController.popBackStack() },
                         onNavigateRequested = { navigateSafe(it) },
+                        onExportRequested = { exportLauncher.launch("dankchat-settings-${LocalDate.now()}.json") },
+                        onImportRequested = { importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
                         onLogoutRequested = {
                             with(navController) {
                                 previousBackStackEntry?.savedStateHandle?.set(MainFragment.LOGOUT_REQUEST_KEY, true)
@@ -115,6 +193,8 @@ private fun OverviewSettings(
     onBackPressed: () -> Unit,
     onLogoutRequested: () -> Unit,
     onNavigateRequested: (id: Int) -> Unit,
+    onExportRequested: () -> Unit = {},
+    onImportRequested: () -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
@@ -170,6 +250,19 @@ private fun OverviewSettings(
                     onNavigateRequested(R.id.action_overviewSettingsFragment_to_changelogSheetFragment)
                 })
             }
+
+            PreferenceItem(
+                title = stringResource(R.string.settings_backup_export),
+                icon = Icons.Default.FileUpload,
+                summary = stringResource(R.string.settings_backup_export_summary),
+                onClick = onExportRequested,
+            )
+            PreferenceItem(
+                title = stringResource(R.string.settings_backup_import),
+                icon = Icons.Default.FileDownload,
+                summary = stringResource(R.string.settings_backup_import_summary),
+                onClick = onImportRequested,
+            )
 
             PreferenceItem(stringResource(R.string.logout), Icons.AutoMirrored.Default.ExitToApp, isEnabled = isLoggedIn, onClick = onLogoutRequested)
             SecretDankerModeTrigger {

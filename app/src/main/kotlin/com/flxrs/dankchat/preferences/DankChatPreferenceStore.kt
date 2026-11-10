@@ -36,6 +36,16 @@ class DankChatPreferenceStore(
         get() = dankChatPreferences.getString(RENAME_KEY, null)
         set(value) = dankChatPreferences.edit { putString(RENAME_KEY, value) }
 
+    val channelRenamesJson: String?
+        get() = channelRenames
+
+    fun restoreChannels(channels: List<UserName>, renamesJson: String?) {
+        dankChatPreferences.edit(commit = true) {
+            putString(CHANNELS_AS_STRING_KEY, channels.takeIf { it.isNotEmpty() }?.joinToString(separator = ",") { it.value })
+            putString(RENAME_KEY, renamesJson)
+        }
+    }
+
     var isLoggedIn: Boolean
         get() = dankChatPreferences.getBoolean(LOGGED_IN_KEY, false)
         set(value) = dankChatPreferences.edit { putBoolean(LOGGED_IN_KEY, value) }

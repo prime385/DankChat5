@@ -1,11 +1,13 @@
 package com.flxrs.dankchat.data.database.entity
 
+import kotlinx.serialization.Serializable
 import android.util.Log
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
 
+@Serializable
 @Entity(tableName = "blacklisted_user")
 data class UserIgnoreEntity(
     @PrimaryKey(autoGenerate = true)

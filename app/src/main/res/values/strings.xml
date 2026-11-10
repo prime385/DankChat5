@@ -3,6 +3,17 @@
     <string name="app_name">DankChat</string>
     <string name="app_name_dank">DankChat (Dank)</string>
     <string name="app_name_custom" translatable="false">DankChat Custom</string>
+    <string name="settings_backup_export" translatable="false">Export settings</string>
+    <string name="settings_backup_export_summary" translatable="false">Save settings, channels, highlights and ignores to a file (login not included)</string>
+    <string name="settings_backup_export_success" translatable="false">Settings exported</string>
+    <string name="settings_backup_export_failed" translatable="false">Could not export settings</string>
+    <string name="settings_backup_import" translatable="false">Import settings</string>
+    <string name="settings_backup_import_summary" translatable="false">Restore settings from a previously exported file</string>
+    <string name="settings_backup_import_title" translatable="false">Import settings?</string>
+    <string name="settings_backup_import_message" translatable="false">Your current settings, channels, highlights and ignores will be replaced by the ones in this file. Your login stays as it is. The app will restart afterwards.</string>
+    <string name="settings_backup_import_confirm" translatable="false">Import and restart</string>
+    <string name="settings_backup_import_invalid" translatable="false">This file is not a valid DankChat settings backup</string>
+    <string name="settings_backup_import_failed" translatable="false">Could not import settings</string>
     <string name="send_hint">Send a message</string>
     <string name="login">Login</string>
     <string name="reload_emotes">Reload emotes</string>

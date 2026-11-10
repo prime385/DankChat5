@@ -364,6 +364,10 @@ class MainViewModel(
         shouldShowChips && !isScrolling
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), true)
 
+    val liveChannels: StateFlow<Set<UserName>> = streamData
+        .map { data -> data.map { it.channel }.toSet() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), emptySet())
+
     // A stream can be toggled when the active channel is live, or a stream is already open.
     // Checking whether a channel is live needs a login, so when logged out it can always be toggled.
     val isStreamAvailable: StateFlow<Boolean> =

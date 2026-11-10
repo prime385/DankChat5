@@ -2,6 +2,7 @@ package com.flxrs.dankchat.main
 
 import android.widget.TextView
 import androidx.annotation.AttrRes
+import androidx.annotation.ColorInt
 import androidx.core.view.get
 import com.flxrs.dankchat.R
 import com.google.android.material.color.MaterialColors
@@ -42,6 +43,11 @@ fun TabLayout.Tab.setTextColor(@AttrRes id: Int, layerWithSurface: Boolean = fal
         }
     }
     textView.setTextColor(textColor)
+}
+
+fun TabLayout.Tab.setTextColorValue(@ColorInt color: Int) {
+    val textView = view?.getChildAt(1) as? TextView ?: return
+    textView.setTextColor(color)
 }
 
 private const val UNSELECTED_TAB_OVERLAY_ALPHA = 0.25f

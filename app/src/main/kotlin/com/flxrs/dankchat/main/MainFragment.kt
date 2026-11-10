@@ -135,6 +135,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.BaseTransientBottomBar.BaseCallback
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
 import kotlinx.coroutines.Dispatchers
@@ -288,6 +289,14 @@ class MainFragment : Fragment() {
     private lateinit var suggestionAdapter: SuggestionsArrayAdapter
     private var currentMediaUri = Uri.EMPTY
     private val tabSelectionListener = TabSelectionListener()
+
+    // Runs after the normal selection colouring, so live channels stay green
+    private val liveTabColorListener = object : TabLayout.OnTabSelectedListener {
+        override fun onTabSelected(tab: TabLayout.Tab?) = applyLiveTabColors()
+        override fun onTabUnselected(tab: TabLayout.Tab?) = applyLiveTabColors()
+        override fun onTabReselected(tab: TabLayout.Tab?) = Unit
+    }
+    private var coloredLiveChannels: Set<UserName> = emptySet()
 
     private val requestImageCapture = registerForActivityResult(StartActivityForResult()) { if (it.resultCode == Activity.RESULT_OK) handleCaptureRequest(imageCapture = true) }
     private val requestVideoCapture = registerForActivityResult(StartActivityForResult()) { if (it.resultCode == Activity.RESULT_OK) handleCaptureRequest(imageCapture = false) }
@@ -495,6 +504,7 @@ class MainFragment : Fragment() {
             }
             collectFlow(channelMentionCount, ::updateChannelMentionBadges)
             collectFlow(unreadMessagesMap, ::updateUnreadChannelTabColors)
+            collectFlow(liveChannels) { binding.tabs.post { applyLiveTabColors() } }
             collectFlow(shouldColorNotification) { activity?.invalidateMenu() }
             collectFlow(channels, mainViewModel::fetchStreamData)
             collectFlow(currentStreamedChannel) {
@@ -595,6 +605,7 @@ class MainFragment : Fragment() {
         }
         tabLayoutMediator.attach()
         binding.tabs.addOnTabSelectedListener(tabSelectionListener)
+        binding.tabs.addOnTabSelectedListener(liveTabColorListener)
 
         (requireActivity() as AppCompatActivity).apply {
             setSupportActionBar(binding.toolbar)
@@ -752,6 +763,7 @@ class MainFragment : Fragment() {
 
     override fun onDestroyView() {
         binding.tabs.removeOnTabSelectedListener(tabSelectionListener)
+        binding.tabs.removeOnTabSelectedListener(liveTabColorListener)
         binding.chatViewpager.unregisterOnPageChangeCallback(pageChangeCallback)
         inputBottomSheetBehavior?.removeBottomSheetCallback(inputSheetCallback)
         fullscreenBottomSheetBehavior?.removeBottomSheetCallback(fullScreenSheetCallback)
@@ -1421,6 +1433,7 @@ class MainFragment : Fragment() {
         activity?.invalidateMenu()
         updateChannelMentionBadges(channels = mainViewModel.channelMentionCount.firstValueOrNull.orEmpty())
         updateUnreadChannelTabColors(channels = mainViewModel.unreadMessagesMap.firstValueOrNull.orEmpty())
+        binding.tabs.post { applyLiveTabColors() }
     }
 
     private fun updateUnreadChannelTabColors(channels: Map<UserName, Boolean>) {
@@ -1429,10 +1442,34 @@ class MainFragment : Fragment() {
                 binding.chatViewpager.currentItem -> mainViewModel.clearUnreadMessage(channel)
                 else                              -> {
                     val tab = binding.tabs.getTabAt(index)
-                    binding.tabs.post { tab?.setTextColor(R.attr.colorOnSurface) }
+                    binding.tabs.post {
+                        tab?.setTextColor(R.attr.colorOnSurface)
+                        applyLiveTabColors()
+                    }
                 }
             }
         }
+    }
+
+    private fun applyLiveTabColors() {
+        val binding = bindingRef ?: return
+        val live = mainViewModel.liveChannels.value
+        val green = ContextCompat.getColor(binding.tabs.context, R.color.live_channel_tab)
+        val unread = mainViewModel.unreadMessagesMap.firstValueOrNull.orEmpty()
+        for (index in 0 until binding.tabs.tabCount) {
+            val tab = binding.tabs.getTabAt(index) ?: continue
+            val channel = tabAdapter[index] ?: continue
+            when {
+                channel in live                   -> tab.setTextColorValue(green)
+                // Channel went offline: back to its normal colour
+                channel in coloredLiveChannels    -> when {
+                    tab.isSelected                -> tab.setTextColor(R.attr.colorPrimary)
+                    unread[channel] == true       -> tab.setTextColor(R.attr.colorOnSurface)
+                    else                          -> tab.setTextColor(R.attr.colorOnSurfaceVariant, layerWithSurface = true)
+                }
+            }
+        }
+        coloredLiveChannels = live
     }
 
     private fun updateChannelMentionBadges(channels: Map<UserName, Int>) {

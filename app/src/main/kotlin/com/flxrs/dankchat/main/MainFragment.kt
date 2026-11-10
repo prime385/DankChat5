@@ -686,6 +686,7 @@ class MainFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        mainViewModel.resumeStreamData()
         changeActionBarVisibility(mainViewModel.isFullscreenFlow.value)
         bindingRef?.updatePictureInPictureVisibility()
 

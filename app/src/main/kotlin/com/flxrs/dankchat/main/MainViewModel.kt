@@ -52,7 +52,6 @@ import com.flxrs.dankchat.preferences.stream.StreamsSettingsDataStore
 import com.flxrs.dankchat.utils.DateTimeUtils
 import com.flxrs.dankchat.utils.extensions.flatMapLatestOrDefault
 import com.flxrs.dankchat.utils.extensions.moveToFront
-import com.flxrs.dankchat.utils.extensions.timer
 import com.flxrs.dankchat.utils.extensions.toEmoteItems
 import com.flxrs.dankchat.utils.removeExifAttributes
 import io.ktor.serialization.JsonConvertException
@@ -704,25 +703,37 @@ class MainViewModel(
         cancelStreamData()
         channels?.ifEmpty { null } ?: return
 
-        viewModelScope.launch {
+        // The job is stored right away, so a later cancel or refetch always stops this one
+        fetchTimerJob = viewModelScope.launch {
             val settings = streamsSettingsDataStore.settings.first()
             if (!dankChatPreferenceStore.isLoggedIn || !settings.fetchStreams) {
                 return@launch
             }
 
-            fetchTimerJob = timer(STREAM_REFRESH_RATE) {
-                val data = dataRepository.getStreams(channels)?.map {
-                    val uptime = DateTimeUtils.calculateUptime(it.startedAt)
-                    val category = it.category
-                        ?.takeIf { settings.showStreamCategory }
-                        ?.ifBlank { null }
-                    val formatted = dankChatPreferenceStore.formatViewersString(it.viewerCount, uptime, category)
+            while (isActive) {
+                val streams = runCatching { dataRepository.getStreams(channels) }.getOrNull()
+                if (streams != null) {
+                    streamData.value = streams.map {
+                        val uptime = DateTimeUtils.calculateUptime(it.startedAt)
+                        val category = it.category
+                            ?.takeIf { settings.showStreamCategory }
+                            ?.ifBlank { null }
+                        val formatted = dankChatPreferenceStore.formatViewersString(it.viewerCount, uptime, category)
 
-                    StreamData(channel = it.userLogin, formattedData = formatted)
-                }.orEmpty()
+                        StreamData(channel = it.userLogin, formattedData = formatted)
+                    }
+                }
 
-                streamData.value = data
+                // A failed fetch (e.g. network not ready yet at app start) is retried soon instead of in 30s
+                delay(if (streams != null) STREAM_REFRESH_RATE else STREAM_RETRY_DELAY)
             }
+        }
+    }
+
+    // Restarts fetching when the screen resumes, unless it is already running
+    fun resumeStreamData() {
+        if (fetchTimerJob?.isActive != true) {
+            fetchStreamData()
         }
     }
 
@@ -891,5 +902,6 @@ class MainViewModel(
     companion object {
         private val TAG = MainViewModel::class.java.simpleName
         private val STREAM_REFRESH_RATE = 30.seconds
+        private val STREAM_RETRY_DELAY = 5.seconds
     }
 }

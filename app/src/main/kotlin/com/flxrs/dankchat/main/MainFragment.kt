@@ -1456,12 +1456,18 @@ class MainFragment : Fragment() {
             val tab = binding.tabs.getTabAt(index) ?: continue
             val channel = tabAdapter[index] ?: continue
             when {
-                channel in live                   -> tab.setTextColorValue(green)
-                // Channel went offline: back to its normal colour
-                channel in coloredLiveChannels    -> when {
-                    tab.isSelected                -> tab.setTextColor(R.attr.colorPrimary)
-                    unread[channel] == true       -> tab.setTextColor(R.attr.colorOnSurface)
-                    else                          -> tab.setTextColor(R.attr.colorOnSurfaceVariant, layerWithSurface = true)
+                channel in live                   -> {
+                    tab.setTextColorValue(green)
+                    tab.setTextBold(true)
+                }
+                // Channel went offline: back to its normal colour and weight
+                channel in coloredLiveChannels    -> {
+                    tab.setTextBold(false)
+                    when {
+                        tab.isSelected            -> tab.setTextColor(R.attr.colorPrimary)
+                        unread[channel] == true   -> tab.setTextColor(R.attr.colorOnSurface)
+                        else                      -> tab.setTextColor(R.attr.colorOnSurfaceVariant, layerWithSurface = true)
+                    }
                 }
             }
         }

@@ -1,5 +1,6 @@
 package com.flxrs.dankchat.main
 
+import android.graphics.Typeface
 import android.widget.TextView
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
@@ -48,6 +49,14 @@ fun TabLayout.Tab.setTextColor(@AttrRes id: Int, layerWithSurface: Boolean = fal
 fun TabLayout.Tab.setTextColorValue(@ColorInt color: Int) {
     val textView = view?.getChildAt(1) as? TextView ?: return
     textView.setTextColor(color)
+}
+
+fun TabLayout.Tab.setTextBold(bold: Boolean) {
+    val textView = view?.getChildAt(1) as? TextView ?: return
+    val isBold = textView.typeface?.isBold == true
+    if (isBold != bold) {
+        textView.typeface = Typeface.create(textView.typeface, if (bold) Typeface.BOLD else Typeface.NORMAL)
+    }
 }
 
 private const val UNSELECTED_TAB_OVERLAY_ALPHA = 0.25f

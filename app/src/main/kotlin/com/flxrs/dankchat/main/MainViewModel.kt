@@ -358,8 +358,12 @@ class MainViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), EmoteMenuTab.entries.map { EmoteMenuTabItem(it, emptyList()) })
 
     val isFullscreenFlow: StateFlow<Boolean> = _isFullscreen.asStateFlow()
-    val shouldShowChipToggle: StateFlow<Boolean> = appearanceSettingsDataStore.showChips
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), true)
+    val shouldShowChipToggle: StateFlow<Boolean> = combine(
+        appearanceSettingsDataStore.showChips,
+        isScrolling,
+    ) { shouldShowChips, isScrolling ->
+        shouldShowChips && !isScrolling
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), true)
 
     // A stream can be toggled when the active channel is live, or a stream is already open
     val isStreamAvailable: StateFlow<Boolean> =

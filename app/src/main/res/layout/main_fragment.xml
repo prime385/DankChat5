@@ -65,7 +65,7 @@
                 app:iconEndPadding="-2dp"
                 app:iconStartPadding="-2dp"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/stream_webview_wrapper"
+                app:layout_constraintTop_toBottomOf="@id/toggle_stream"
                 app:textEndPadding="0dp"
                 app:textStartPadding="0dp" />
 
@@ -95,7 +95,7 @@
                 app:iconEndPadding="-2dp"
                 app:iconStartPadding="-2dp"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/toggle_input"
+                app:layout_constraintTop_toBottomOf="@id/stream_webview_wrapper"
                 app:textEndPadding="0dp"
                 app:textStartPadding="0dp" />
 

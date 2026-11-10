@@ -586,7 +586,7 @@ class MainFragment : Fragment() {
             setSupportActionBar(binding.toolbar)
             onBackPressedDispatcher.addCallback(viewLifecycleOwner, onBackPressedCallback)
 
-            ViewCompat.setOnApplyWindowInsetsListener(binding.toggleFullscreen) { v, insets ->
+            ViewCompat.setOnApplyWindowInsetsListener(binding.toggleStream) { v, insets ->
                 // additional margin for chips because of display cutouts/punch holes
                 val needsExtraMargin = bindingRef?.streamWebviewWrapper?.isVisible == true || v.resources.isLandscape || !mainViewModel.isFullscreen
                 val extraMargin = when {

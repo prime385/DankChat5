@@ -213,12 +213,12 @@ private fun ComponentsCategory(
             onDragFinished = { onInteraction(AppearanceSettingsInteraction.ButtonOpacity(opacity.roundToInt())) },
             summary = stringResource(R.string.preference_button_opacity_summary, opacity.roundToInt()),
         )
-        var idleOpacity by remember(buttonIdleOpacityPercent) { mutableFloatStateOf(buttonIdleOpacityPercent.toFloat()) }
+        var idleOpacity by remember(buttonIdleOpacityPercent) { mutableFloatStateOf(buttonIdleOpacityPercent.coerceIn(0, 30).toFloat()) }
         SliderPreferenceItem(
             title = stringResource(R.string.preference_button_idle_opacity_title),
             value = idleOpacity,
-            range = 10f..100f,
-            steps = 17,
+            range = 0f..30f,
+            steps = 5,
             isEnabled = showChips,
             onDrag = { idleOpacity = it },
             onDragFinished = { onInteraction(AppearanceSettingsInteraction.ButtonIdleOpacity(idleOpacity.roundToInt())) },

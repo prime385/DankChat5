@@ -327,8 +327,11 @@ class MainFragment : Fragment() {
         val binding = bindingRef ?: return
         val dimmed = isIdle && mainViewModel.isActiveChatAtBottom.value
         val settings = appearanceSettingsDataStore.current()
-        val percent = if (dimmed) settings.buttonIdleOpacityPercent else settings.buttonOpacityPercent
-        val alpha = percent.coerceIn(10, 100) / 100f
+        val percent = when {
+            dimmed -> settings.buttonIdleOpacityPercent.coerceIn(0, 30)
+            else   -> settings.buttonOpacityPercent.coerceIn(10, 100)
+        }
+        val alpha = percent / 100f
         val streamAlpha = if (binding.toggleStream.isEnabled) alpha else alpha * TOGGLE_BUTTON_DISABLED_FACTOR
         listOf(binding.toggleFullscreen, binding.toggleAppSwitch, binding.toggleInput).forEach {
             it.animate().alpha(alpha).setDuration(TOGGLE_FADE_DURATION_MS).start()
@@ -406,8 +409,8 @@ class MainFragment : Fragment() {
             toggleStream.setOnClickListener {
                 val wasStreamActive = mainViewModel.isStreamActive
                 mainViewModel.toggleStream()
-                // Turning the stream off also leaves fullscreen
-                if (wasStreamActive && mainViewModel.isFullscreen) {
+                // The stream button toggles fullscreen along with the stream: on enters it, off leaves it
+                if (wasStreamActive == mainViewModel.isFullscreen) {
                     mainViewModel.toggleFullscreen()
                 }
                 root.requestApplyInsets()

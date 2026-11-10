@@ -404,7 +404,12 @@ class MainFragment : Fragment() {
                 true
             }
             toggleStream.setOnClickListener {
+                val wasStreamActive = mainViewModel.isStreamActive
                 mainViewModel.toggleStream()
+                // Turning the stream off also leaves fullscreen
+                if (wasStreamActive && mainViewModel.isFullscreen) {
+                    mainViewModel.toggleFullscreen()
+                }
                 root.requestApplyInsets()
             }
             var offset = 0f
@@ -761,6 +766,7 @@ class MainFragment : Fragment() {
         }
         restartIdleTimer()
         updateToggleButtonAlpha()
+        bindingRef?.splitThumb?.alpha = appearanceSettingsDataStore.current().splitHandleOpacityPercent.coerceIn(0, 100) / 100f
         // Picture-in-picture callbacks can arrive late or out of order; re-check once things settle
         // so the chat never stays hidden behind a full-size player
         bindingRef?.root?.post { bindingRef?.updatePictureInPictureVisibility() }

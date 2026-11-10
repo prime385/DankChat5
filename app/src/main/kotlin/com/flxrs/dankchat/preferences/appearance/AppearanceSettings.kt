@@ -18,6 +18,7 @@ data class AppearanceSettings(
     val buttonFadeDelaySeconds: Int = 10,
     val buttonOpacityPercent: Int = 70,
     val buttonIdleOpacityPercent: Int = 30,
+    val splitHandleOpacityPercent: Int = 100,
 )
 
 enum class ThemePreference { System, Dark, Light }

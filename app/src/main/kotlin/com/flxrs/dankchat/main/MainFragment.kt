@@ -392,6 +392,8 @@ class MainFragment : Fragment() {
             }
 
             tabs.setInitialColors()
+            // Re-apply live colours in the same frame whenever the tab bar restyles its tabs (avoids a colour flash while swiping)
+            tabs.onTabViewsRestyled = Runnable { applyLiveTabColors() }
 
             addChannelsButton.setOnClickListener { navigateSafe(R.id.action_mainFragment_to_addChannelDialogFragment) }
             toggleFullscreen.setOnClickListener { mainViewModel.toggleFullscreen() }

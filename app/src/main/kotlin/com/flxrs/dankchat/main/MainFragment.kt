@@ -383,9 +383,31 @@ class MainFragment : Fragment() {
         if (expanded) {
             val loginText = if (dankChatPreferences.isLoggedIn) R.string.relogin else R.string.login
             binding.moreLogin.setText(loginText)
+            alignMoreMenu(binding)
         }
         listOf(binding.moreReloadEmotes, binding.moreReconnect, binding.moreLogin, binding.moreSettings).forEach {
             it.isVisible = expanded
+        }
+    }
+
+    // Lines the menu up with the visible pill of the ⋮ button, which sits inside invisible tap padding:
+    // the column's right edges match the round buttons, and Reload emotes keeps the same 16 dp visible gap
+    private fun alignMoreMenu(binding: MainFragmentBinding) {
+        val more = binding.toggleMore
+        val pill = more.chipDrawable.bounds
+        val (insetLeft, insetRight) = when {
+            pill.width() > 0 && more.width > 0 -> pill.left to (more.width - pill.right)
+            else                               -> {
+                val inset = ((more.width - more.chipDrawable.intrinsicWidth) / 2).coerceAtLeast(0)
+                inset to inset
+            }
+        }
+        val buttonMarginEnd = (more.layoutParams as ViewGroup.MarginLayoutParams).marginEnd
+        listOf(binding.moreSettings, binding.moreReconnect, binding.moreLogin).forEach {
+            it.updateLayoutParams<ViewGroup.MarginLayoutParams> { marginEnd = buttonMarginEnd + insetRight }
+        }
+        binding.moreReloadEmotes.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+            marginEnd = (MORE_MENU_GAP_DP.px - insetLeft).coerceAtLeast(0)
         }
     }
 
@@ -1870,6 +1892,7 @@ class MainFragment : Fragment() {
 
     companion object {
         private const val DISABLED_GUIDELINE_PERCENT = 0f
+        private const val MORE_MENU_GAP_DP = 16
         private const val TOGGLE_BUTTON_DISABLED_FACTOR = 0.43f // greyed-out stream button: e.g. 70% -> 30%
         private const val TOGGLE_FADE_DURATION_MS = 300L
         private const val DEFAULT_GUIDELINE_PERCENT = 0.6f

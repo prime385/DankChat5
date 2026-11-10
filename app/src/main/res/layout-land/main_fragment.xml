@@ -193,8 +193,9 @@
                 android:layout_marginEnd="8dp"
                 android:text="@string/reload_emotes"
                 android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/toggle_more" />
+                app:layout_constraintBottom_toBottomOf="@id/toggle_more"
+                app:layout_constraintEnd_toStartOf="@id/toggle_more"
+                app:layout_constraintTop_toTopOf="@id/toggle_more" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/more_reconnect"
@@ -204,7 +205,7 @@
                 android:text="@string/reconnect"
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/more_reload_emotes" />
+                app:layout_constraintTop_toBottomOf="@id/more_settings" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/more_login"
@@ -224,7 +225,7 @@
                 android:text="@string/settings"
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/more_login" />
+                app:layout_constraintTop_toBottomOf="@id/toggle_more" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/toggle_stream"

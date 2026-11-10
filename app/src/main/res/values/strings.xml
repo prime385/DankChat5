@@ -9,6 +9,8 @@
     <string name="preference_button_fade_delay_title" translatable="false">Fade buttons when idle</string>
     <string name="preference_button_fade_delay_summary" translatable="false">Fade the buttons after %1$d seconds without touching the screen, while the chat is following live messages</string>
     <string name="preference_button_opacity_title" translatable="false">Button opacity</string>
+    <string name="preference_reload_emotes_on_launch_title" translatable="false">Reload emotes on app start</string>
+    <string name="preference_reload_emotes_on_launch_summary" translatable="false">Runs "Reload emotes" once after the app has finished starting</string>
     <string name="preference_layout_animation_title" translatable="false">Stream &amp; fullscreen animation</string>
     <string name="preference_layout_animation_summary" translatable="false">%1$d ms slide when toggling the stream or fullscreen (0 = off)</string>
     <string name="preference_split_handle_opacity_title" translatable="false">Drag handle opacity</string>

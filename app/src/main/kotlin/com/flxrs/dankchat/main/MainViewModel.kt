@@ -487,7 +487,7 @@ class MainViewModel(
 
     // Runs the same full "Reload emotes" as the menu, once per app launch, right after the first data load
     private fun reloadEmotesOnceAfterLaunch(channelList: List<UserName>) {
-        if (hasReloadedEmotesSinceLaunch) return
+        if (hasReloadedEmotesSinceLaunch || !appearanceSettingsDataStore.current().reloadEmotesOnLaunch) return
         val channel = activeChannel.value ?: channelList.firstOrNull() ?: return
         hasReloadedEmotesSinceLaunch = true
         reloadEmotes(channel)

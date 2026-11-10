@@ -162,6 +162,7 @@ private fun AppearanceSettings(
                 buttonIdleOpacityPercent = settings.buttonIdleOpacityPercent,
                 splitHandleOpacityPercent = settings.splitHandleOpacityPercent,
                 layoutAnimationMs = settings.layoutAnimationMs,
+                reloadEmotesOnLaunch = settings.reloadEmotesOnLaunch,
                 showChangelogs = settings.showChangelogs,
                 onInteraction = onInteraction,
             )
@@ -180,6 +181,7 @@ private fun ComponentsCategory(
     buttonIdleOpacityPercent: Int,
     splitHandleOpacityPercent: Int,
     layoutAnimationMs: Int,
+    reloadEmotesOnLaunch: Boolean,
     showChangelogs: Boolean,
     onInteraction: (AppearanceSettingsInteraction) -> Unit,
 ) {
@@ -256,6 +258,12 @@ private fun ComponentsCategory(
             onDrag = { fadeDelay = it },
             onDragFinished = { onInteraction(AppearanceSettingsInteraction.ButtonFadeDelay(fadeDelay.roundToInt())) },
             summary = stringResource(R.string.preference_button_fade_delay_summary, fadeDelay.roundToInt()),
+        )
+        SwitchPreferenceItem(
+            title = stringResource(R.string.preference_reload_emotes_on_launch_title),
+            summary = stringResource(R.string.preference_reload_emotes_on_launch_summary),
+            isChecked = reloadEmotesOnLaunch,
+            onClick = { onInteraction(AppearanceSettingsInteraction.ReloadEmotesOnLaunch(it)) },
         )
         SwitchPreferenceItem(
             title = stringResource(R.string.preference_show_changelogs),

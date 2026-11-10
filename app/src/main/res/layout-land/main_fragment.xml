@@ -172,6 +172,61 @@
                 app:textStartPadding="0dp" />
 
             <com.google.android.material.chip.Chip
+                android:id="@+id/toggle_more"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:alpha="0.7"
+                android:contentDescription="@string/more"
+                app:chipIcon="@drawable/ic_more_vert"
+                app:iconEndPadding="-2dp"
+                app:iconStartPadding="-2dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/toggle_input"
+                app:textEndPadding="0dp"
+                app:textStartPadding="0dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/more_reload_emotes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/reload_emotes"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/toggle_more" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/more_reconnect"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/reconnect"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/more_reload_emotes" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/more_login"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/relogin"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/more_reconnect" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/more_settings"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/settings"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/more_login" />
+
+            <com.google.android.material.chip.Chip
                 android:id="@+id/toggle_stream"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

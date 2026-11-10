@@ -38,6 +38,7 @@ class AppearanceSettingsViewModel(
                 is AppearanceSettingsInteraction.ButtonIdleOpacity -> dataStore.update { it.copy(buttonIdleOpacityPercent = interaction.percent) }
                 is AppearanceSettingsInteraction.SplitHandleOpacity -> dataStore.update { it.copy(splitHandleOpacityPercent = interaction.percent) }
                 is AppearanceSettingsInteraction.LayoutAnimation   -> dataStore.update { it.copy(layoutAnimationMs = interaction.ms) }
+                is AppearanceSettingsInteraction.ReloadEmotesOnLaunch -> dataStore.update { it.copy(reloadEmotesOnLaunch = interaction.value) }
             }
         }
     }
@@ -61,4 +62,5 @@ sealed interface AppearanceSettingsInteraction {
     data class ButtonIdleOpacity(val percent: Int) : AppearanceSettingsInteraction
     data class SplitHandleOpacity(val percent: Int) : AppearanceSettingsInteraction
     data class LayoutAnimation(val ms: Int) : AppearanceSettingsInteraction
+    data class ReloadEmotesOnLaunch(val value: Boolean) : AppearanceSettingsInteraction
 }

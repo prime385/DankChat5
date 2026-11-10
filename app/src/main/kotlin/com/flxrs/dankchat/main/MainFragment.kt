@@ -373,6 +373,21 @@ class MainFragment : Fragment() {
         TransitionManager.beginDelayedTransition(root, transition)
     }
 
+    // The ⋮ button opens a column of text chips, styled like the original 3.11.11 chip menu
+    private var isMoreMenuExpanded = false
+
+    private fun setMoreMenuExpanded(expanded: Boolean) {
+        isMoreMenuExpanded = expanded
+        val binding = bindingRef ?: return
+        if (expanded) {
+            val loginText = if (dankChatPreferences.isLoggedIn) R.string.relogin else R.string.login
+            binding.moreLogin.setText(loginText)
+        }
+        listOf(binding.moreReloadEmotes, binding.moreReconnect, binding.moreLogin, binding.moreSettings).forEach {
+            it.isVisible = expanded
+        }
+    }
+
     private fun restartIdleTimer() {
         idleJob?.cancel()
         if (isIdle) {
@@ -396,7 +411,7 @@ class MainFragment : Fragment() {
         }
         val alpha = percent / 100f
         val streamAlpha = if (binding.toggleStream.isEnabled) alpha else alpha * TOGGLE_BUTTON_DISABLED_FACTOR
-        listOf(binding.toggleFullscreen, binding.toggleAppSwitch, binding.toggleInput).forEach {
+        listOf(binding.toggleFullscreen, binding.toggleAppSwitch, binding.toggleInput, binding.toggleMore).forEach {
             it.animate().alpha(alpha).setDuration(TOGGLE_FADE_DURATION_MS).start()
         }
         binding.toggleStream.animate().alpha(streamAlpha).setDuration(TOGGLE_FADE_DURATION_MS).start()
@@ -468,6 +483,23 @@ class MainFragment : Fragment() {
             }
             toggleInput.setOnClickListener { mainViewModel.toggleInput() }
             toggleAppSwitch.setOnClickListener { switchToChosenApp() }
+            toggleMore.setOnClickListener { setMoreMenuExpanded(!isMoreMenuExpanded) }
+            moreReloadEmotes.setOnClickListener {
+                setMoreMenuExpanded(false)
+                reloadEmotes()
+            }
+            moreReconnect.setOnClickListener {
+                setMoreMenuExpanded(false)
+                mainViewModel.reconnect()
+            }
+            moreLogin.setOnClickListener {
+                setMoreMenuExpanded(false)
+                openLogin()
+            }
+            moreSettings.setOnClickListener {
+                setMoreMenuExpanded(false)
+                navigateSafe(R.id.action_mainFragment_to_overviewSettingsFragment).also { hideKeyboard() }
+            }
             toggleAppSwitch.setOnLongClickListener {
                 showAppSwitchPicker()
                 true
@@ -588,6 +620,8 @@ class MainFragment : Fragment() {
                 binding.toggleFullscreen.isVisible = visible
                 binding.toggleInput.isVisible = visible
                 binding.toggleAppSwitch.isVisible = visible
+                binding.toggleMore.isVisible = visible
+                if (!visible) setMoreMenuExpanded(false)
                 binding.toggleStream.isVisible = visible
             }
             collectFlow(isFullscreenFlow) {
@@ -1626,6 +1660,8 @@ class MainFragment : Fragment() {
             toggleFullscreen.isVisible = showToggles
             toggleInput.isVisible = showToggles
             toggleAppSwitch.isVisible = showToggles
+            toggleMore.isVisible = showToggles
+            if (!showToggles) setMoreMenuExpanded(false)
             toggleStream.isVisible = showToggles
             splitThumb?.isVisible = !isInPictureInPicture && streamWebviewWrapper.isVisible
             splitGuideline?.updateLayoutParams<ConstraintLayout.LayoutParams> {

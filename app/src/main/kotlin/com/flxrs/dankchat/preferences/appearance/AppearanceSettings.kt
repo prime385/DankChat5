@@ -20,6 +20,7 @@ data class AppearanceSettings(
     val buttonIdleOpacityPercent: Int = 30,
     val splitHandleOpacityPercent: Int = 100,
     val layoutAnimationMs: Int = 250,
+    val reloadEmotesOnLaunch: Boolean = false,
 )
 
 enum class ThemePreference { System, Dark, Light }

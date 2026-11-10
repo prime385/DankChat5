@@ -364,6 +364,17 @@ class MainViewModel(
         shouldShowChips && !isScrolling
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), true)
 
+    private val chatAtBottom = MutableStateFlow<Map<UserName, Boolean>>(emptyMap())
+
+    fun setChatAtBottom(channel: UserName, atBottom: Boolean) {
+        chatAtBottom.update { it + (channel to atBottom) }
+    }
+
+    // True when the chat of the channel being viewed is scrolled all the way down (following live messages)
+    val isActiveChatAtBottom: StateFlow<Boolean> = combine(activeChannel, chatAtBottom) { channel, atBottom ->
+        channel == null || atBottom[channel] ?: true
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), true)
+
     val liveChannels: StateFlow<Set<UserName>> = streamData
         .map { data -> data.map { it.channel }.toSet() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), emptySet())

@@ -4,6 +4,12 @@
     <string name="app_name_dank">DankChat (Dank)</string>
     <string name="app_name_custom" translatable="false">DankChat Custom</string>
     <string name="app_switch" translatable="false">Switch to app</string>
+    <string name="preference_button_fade_delay_title" translatable="false">Fade buttons when idle</string>
+    <string name="preference_button_fade_delay_summary" translatable="false">Fade the buttons after %1$d seconds without touching the screen, while the chat is following live messages</string>
+    <string name="preference_button_opacity_title" translatable="false">Button opacity</string>
+    <string name="preference_button_opacity_summary" translatable="false">%1$d%%</string>
+    <string name="preference_button_idle_opacity_title" translatable="false">Faded button opacity</string>
+    <string name="preference_button_idle_opacity_summary" translatable="false">%1$d%% when faded</string>
     <string name="app_switch_choose_title" translatable="false">Choose app for the switch button</string>
     <string name="app_switch_clear" translatable="false">Remove</string>
     <string name="app_switch_hint" translatable="false">Tap the button to switch to %1$s. Long-press it to choose a different app.</string>

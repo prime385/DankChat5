@@ -54,6 +54,21 @@ open class ChatFragment : Fragment() {
 
     // TODO move to viewmodel?
     protected open var isAtBottom = true
+        set(value) {
+            field = value
+            reportAtBottom()
+        }
+
+    private fun reportAtBottom() {
+        if (this::class != ChatFragment::class) return
+        val channel = arguments?.let { ChatFragmentArgs.fromBundle(it).channel } ?: return
+        mainViewModel.setChatAtBottom(channel, isAtBottom)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        reportAtBottom()
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         bindingRef = ChatFragmentBinding.inflate(inflater, container, false).apply {

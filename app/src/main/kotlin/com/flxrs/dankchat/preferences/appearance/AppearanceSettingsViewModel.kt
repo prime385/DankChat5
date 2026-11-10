@@ -33,6 +33,9 @@ class AppearanceSettingsViewModel(
                 is AppearanceSettingsInteraction.AutoDisableInput  -> dataStore.update { it.copy(autoDisableInput = interaction.value) }
                 is AppearanceSettingsInteraction.ShowChips         -> dataStore.update { it.copy(showChips = interaction.value) }
                 is AppearanceSettingsInteraction.ShowChangelogs    -> dataStore.update { it.copy(showChangelogs = interaction.value) }
+                is AppearanceSettingsInteraction.ButtonFadeDelay   -> dataStore.update { it.copy(buttonFadeDelaySeconds = interaction.seconds) }
+                is AppearanceSettingsInteraction.ButtonOpacity     -> dataStore.update { it.copy(buttonOpacityPercent = interaction.percent) }
+                is AppearanceSettingsInteraction.ButtonIdleOpacity -> dataStore.update { it.copy(buttonIdleOpacityPercent = interaction.percent) }
             }
         }
     }
@@ -51,4 +54,7 @@ sealed interface AppearanceSettingsInteraction {
     data class AutoDisableInput(val value: Boolean) : AppearanceSettingsInteraction
     data class ShowChips(val value: Boolean) : AppearanceSettingsInteraction
     data class ShowChangelogs(val value: Boolean) : AppearanceSettingsInteraction
+    data class ButtonFadeDelay(val seconds: Int) : AppearanceSettingsInteraction
+    data class ButtonOpacity(val percent: Int) : AppearanceSettingsInteraction
+    data class ButtonIdleOpacity(val percent: Int) : AppearanceSettingsInteraction
 }

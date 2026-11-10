@@ -157,6 +157,9 @@ private fun AppearanceSettings(
                 showInput = settings.showInput,
                 autoDisableInput = settings.autoDisableInput,
                 showChips = settings.showChips,
+                buttonFadeDelaySeconds = settings.buttonFadeDelaySeconds,
+                buttonOpacityPercent = settings.buttonOpacityPercent,
+                buttonIdleOpacityPercent = settings.buttonIdleOpacityPercent,
                 showChangelogs = settings.showChangelogs,
                 onInteraction = onInteraction,
             )
@@ -170,6 +173,9 @@ private fun ComponentsCategory(
     showInput: Boolean,
     autoDisableInput: Boolean,
     showChips: Boolean,
+    buttonFadeDelaySeconds: Int,
+    buttonOpacityPercent: Int,
+    buttonIdleOpacityPercent: Int,
     showChangelogs: Boolean,
     onInteraction: (AppearanceSettingsInteraction) -> Unit,
 ) {
@@ -193,6 +199,38 @@ private fun ComponentsCategory(
             summary = stringResource(R.string.preference_show_chip_actions_summary),
             isChecked = showChips,
             onClick = { onInteraction(ShowChips(it)) },
+        )
+        var opacity by remember(buttonOpacityPercent) { mutableFloatStateOf(buttonOpacityPercent.toFloat()) }
+        SliderPreferenceItem(
+            title = stringResource(R.string.preference_button_opacity_title),
+            value = opacity,
+            range = 10f..100f,
+            steps = 17,
+            isEnabled = showChips,
+            onDrag = { opacity = it },
+            onDragFinished = { onInteraction(AppearanceSettingsInteraction.ButtonOpacity(opacity.roundToInt())) },
+            summary = stringResource(R.string.preference_button_opacity_summary, opacity.roundToInt()),
+        )
+        var idleOpacity by remember(buttonIdleOpacityPercent) { mutableFloatStateOf(buttonIdleOpacityPercent.toFloat()) }
+        SliderPreferenceItem(
+            title = stringResource(R.string.preference_button_idle_opacity_title),
+            value = idleOpacity,
+            range = 10f..100f,
+            steps = 17,
+            isEnabled = showChips,
+            onDrag = { idleOpacity = it },
+            onDragFinished = { onInteraction(AppearanceSettingsInteraction.ButtonIdleOpacity(idleOpacity.roundToInt())) },
+            summary = stringResource(R.string.preference_button_idle_opacity_summary, idleOpacity.roundToInt()),
+        )
+        var fadeDelay by remember(buttonFadeDelaySeconds) { mutableFloatStateOf(buttonFadeDelaySeconds.toFloat()) }
+        SliderPreferenceItem(
+            title = stringResource(R.string.preference_button_fade_delay_title),
+            value = fadeDelay,
+            range = 1f..60f,
+            isEnabled = showChips,
+            onDrag = { fadeDelay = it },
+            onDragFinished = { onInteraction(AppearanceSettingsInteraction.ButtonFadeDelay(fadeDelay.roundToInt())) },
+            summary = stringResource(R.string.preference_button_fade_delay_summary, fadeDelay.roundToInt()),
         )
         SwitchPreferenceItem(
             title = stringResource(R.string.preference_show_changelogs),

@@ -15,6 +15,9 @@ data class AppearanceSettings(
     val showChips: Boolean = true,
     val showChangelogs: Boolean = true,
     val appSwitchPackage: String? = null,
+    val buttonFadeDelaySeconds: Int = 10,
+    val buttonOpacityPercent: Int = 70,
+    val buttonIdleOpacityPercent: Int = 30,
 )
 
 enum class ThemePreference { System, Dark, Light }

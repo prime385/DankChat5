@@ -138,6 +138,8 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.flxrs.dankchat.preferences.appearance.AppearanceSettingsDataStore
@@ -296,6 +298,36 @@ class MainFragment : Fragment() {
         override fun onTabReselected(tab: TabLayout.Tab?) = Unit
     }
     private var coloredLiveChannels: Set<UserName> = emptySet()
+
+    // Buttons fade further after a while without touches, while the chat is following live messages
+    private var isIdle = false
+    private var idleJob: Job? = null
+
+    private fun restartIdleTimer() {
+        idleJob?.cancel()
+        if (isIdle) {
+            isIdle = false
+            updateToggleButtonAlpha()
+        }
+        idleJob = viewLifecycleOwner.lifecycleScope.launch {
+            delay(appearanceSettingsDataStore.current().buttonFadeDelaySeconds.coerceIn(1, 60) * 1000L)
+            isIdle = true
+            updateToggleButtonAlpha()
+        }
+    }
+
+    private fun updateToggleButtonAlpha() {
+        val binding = bindingRef ?: return
+        val dimmed = isIdle && mainViewModel.isActiveChatAtBottom.value
+        val settings = appearanceSettingsDataStore.current()
+        val percent = if (dimmed) settings.buttonIdleOpacityPercent else settings.buttonOpacityPercent
+        val alpha = percent.coerceIn(10, 100) / 100f
+        val streamAlpha = if (binding.toggleStream.isEnabled) alpha else alpha * TOGGLE_BUTTON_DISABLED_FACTOR
+        listOf(binding.toggleFullscreen, binding.toggleAppSwitch, binding.toggleInput).forEach {
+            it.animate().alpha(alpha).setDuration(TOGGLE_FADE_DURATION_MS).start()
+        }
+        binding.toggleStream.animate().alpha(streamAlpha).setDuration(TOGGLE_FADE_DURATION_MS).start()
+    }
 
     private val requestImageCapture = registerForActivityResult(StartActivityForResult()) { if (it.resultCode == Activity.RESULT_OK) handleCaptureRequest(imageCapture = true) }
     private val requestVideoCapture = registerForActivityResult(StartActivityForResult()) { if (it.resultCode == Activity.RESULT_OK) handleCaptureRequest(imageCapture = false) }
@@ -481,7 +513,7 @@ class MainFragment : Fragment() {
             // Greyed out and not tappable while there is no stream to show
             collectFlow(isStreamAvailable) {
                 binding.toggleStream.isEnabled = it
-                binding.toggleStream.alpha = if (it) TOGGLE_BUTTON_ALPHA else TOGGLE_BUTTON_DISABLED_ALPHA
+                updateToggleButtonAlpha()
             }
             collectFlow(shouldShowViewPager) {
                 binding.chatViewpager.isVisible = it && !isInPictureInPictureMode
@@ -503,6 +535,7 @@ class MainFragment : Fragment() {
             }
             collectFlow(channelMentionCount, ::updateChannelMentionBadges)
             collectFlow(unreadMessagesMap, ::updateUnreadChannelTabColors)
+            collectFlow(isActiveChatAtBottom) { updateToggleButtonAlpha() }
             collectFlow(liveChannels) { binding.tabs.post { applyLiveTabColors() } }
             collectFlow(shouldColorNotification) { activity?.invalidateMenu() }
             collectFlow(channels, mainViewModel::fetchStreamData)
@@ -691,6 +724,8 @@ class MainFragment : Fragment() {
     }
 
     override fun onPause() {
+        (activity as? MainActivity)?.onUserInteractionListener = null
+        idleJob?.cancel()
         binding.input.clearFocus()
         mainViewModel.cancelStreamData()
         super.onPause()
@@ -711,7 +746,12 @@ class MainFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         mainViewModel.resumeStreamData()
-        (activity as? MainActivity)?.enterPictureInPictureOnLeave = false
+        (activity as? MainActivity)?.apply {
+            enterPictureInPictureOnLeave = false
+            onUserInteractionListener = ::restartIdleTimer
+        }
+        restartIdleTimer()
+        updateToggleButtonAlpha()
         // Picture-in-picture callbacks can arrive late or out of order; re-check once things settle
         // so the chat never stays hidden behind a full-size player
         bindingRef?.root?.post { bindingRef?.updatePictureInPictureVisibility() }
@@ -1695,8 +1735,8 @@ class MainFragment : Fragment() {
 
     companion object {
         private const val DISABLED_GUIDELINE_PERCENT = 0f
-        private const val TOGGLE_BUTTON_ALPHA = 0.7f
-        private const val TOGGLE_BUTTON_DISABLED_ALPHA = 0.3f
+        private const val TOGGLE_BUTTON_DISABLED_FACTOR = 0.43f // greyed-out stream button: e.g. 70% -> 30%
+        private const val TOGGLE_FADE_DURATION_MS = 300L
         private const val DEFAULT_GUIDELINE_PERCENT = 0.6f
         private const val PIP_GUIDELINE_PERCENT = 1f
         private const val MAX_GUIDELINE_PERCENT = 0.8f

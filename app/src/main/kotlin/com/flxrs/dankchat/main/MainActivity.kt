@@ -64,6 +64,14 @@ class MainActivity : AppCompatActivity() {
     // Set by the app switch button right before it opens another app while a stream is playing
     var enterPictureInPictureOnLeave = false
 
+    // Called by Android on every touch or key press anywhere in the app
+    var onUserInteractionListener: (() -> Unit)? = null
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        onUserInteractionListener?.invoke()
+    }
+
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         if (!enterPictureInPictureOnLeave) {

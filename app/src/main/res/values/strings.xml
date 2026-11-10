@@ -4,6 +4,8 @@
     <string name="app_name_dank">DankChat (Dank)</string>
     <string name="app_name_custom" translatable="false">DankChat Custom</string>
     <string name="app_switch" translatable="false">Switch to app</string>
+    <string name="preference_stream_extensions_title" translatable="false">Show stream extensions</string>
+    <string name="preference_stream_extensions_summary" translatable="false">Shows extension overlays on the stream player</string>
     <string name="preference_button_fade_delay_title" translatable="false">Fade buttons when idle</string>
     <string name="preference_button_fade_delay_summary" translatable="false">Fade the buttons after %1$d seconds without touching the screen, while the chat is following live messages</string>
     <string name="preference_button_opacity_title" translatable="false">Button opacity</string>

@@ -27,11 +27,11 @@ class StreamWebView @JvmOverloads constructor(
         webViewClient = StreamWebViewClient()
     }
 
-    fun setStream(channel: UserName?) {
+    fun setStream(channel: UserName?, enableExtensions: Boolean = false) {
         val isActive = channel != null
         isVisible = isActive
         val url = when {
-            isActive -> "https://player.twitch.tv/?channel=$channel&enableExtensions=true&muted=false&parent=twitch.tv"
+            isActive -> "https://player.twitch.tv/?channel=$channel&enableExtensions=$enableExtensions&muted=false&parent=twitch.tv"
             else     -> BLANK_URL
         }
 

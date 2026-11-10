@@ -39,7 +39,7 @@ class StreamWebViewModel(
                 lastStreamedChannel = null
             }
 
-            webView.setStream(channel)
+            webView.setStream(channel, streamsSettingsDataStore.current().showStreamExtensions)
             return
         }
 
@@ -49,7 +49,7 @@ class StreamWebViewModel(
         }
 
         lastStreamedChannel = channel
-        webView.setStream(channel)
+        webView.setStream(channel, streamsSettingsDataStore.current().showStreamExtensions)
     }
 
     val splitFraction: Float

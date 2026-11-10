@@ -28,6 +28,7 @@ class StreamsSettingsViewModel(
                 is StreamsSettingsInteraction.ShowStreamCategory   -> dataStore.update { it.copy(showStreamCategory = interaction.value) }
                 is StreamsSettingsInteraction.PreventStreamReloads -> dataStore.update { it.copy(preventStreamReloads = interaction.value) }
                 is StreamsSettingsInteraction.EnablePiP            -> dataStore.update { it.copy(enablePiP = interaction.value) }
+                is StreamsSettingsInteraction.ShowStreamExtensions -> dataStore.update { it.copy(showStreamExtensions = interaction.value) }
             }
         }
     }
@@ -39,4 +40,5 @@ sealed interface StreamsSettingsInteraction {
     data class ShowStreamCategory(val value: Boolean) : StreamsSettingsInteraction
     data class PreventStreamReloads(val value: Boolean) : StreamsSettingsInteraction
     data class EnablePiP(val value: Boolean) : StreamsSettingsInteraction
+    data class ShowStreamExtensions(val value: Boolean) : StreamsSettingsInteraction
 }

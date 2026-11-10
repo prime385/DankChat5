@@ -132,6 +132,12 @@ private fun StreamsSettings(
                 isEnabled = settings.fetchStreams,
                 onClick = { onInteraction(StreamsSettingsInteraction.PreventStreamReloads(it)) },
             )
+            SwitchPreferenceItem(
+                title = stringResource(R.string.preference_stream_extensions_title),
+                summary = stringResource(R.string.preference_stream_extensions_summary),
+                isChecked = settings.showStreamExtensions,
+                onClick = { onInteraction(StreamsSettingsInteraction.ShowStreamExtensions(it)) },
+            )
 
             val activity = LocalActivity.current
             val pipAvailable = remember {

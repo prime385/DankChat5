@@ -5,6 +5,8 @@
     <string name="app_name_custom" translatable="false">DankChat Custom</string>
     <string name="app_switch" translatable="false">Switch to app</string>
     <string name="preference_stream_extensions_title" translatable="false">Show stream extensions</string>
+    <string name="preference_fullscreen_on_stream_start_title" translatable="false">Fullscreen when starting a stream</string>
+    <string name="preference_fullscreen_on_stream_start_summary" translatable="false">Turning a stream on with the Stream button also enters fullscreen. Turning it off always leaves fullscreen.</string>
     <string name="preference_stream_extensions_summary" translatable="false">Shows extension overlays on the stream player</string>
     <string name="preference_button_fade_delay_title" translatable="false">Fade buttons when idle</string>
     <string name="preference_button_fade_delay_summary" translatable="false">Fade the buttons after %1$d seconds without touching the screen, while the chat is following live messages</string>

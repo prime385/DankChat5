@@ -362,12 +362,9 @@ class MainViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), EmoteMenuTab.entries.map { EmoteMenuTabItem(it, emptyList()) })
 
     val isFullscreenFlow: StateFlow<Boolean> = _isFullscreen.asStateFlow()
-    val shouldShowChipToggle: StateFlow<Boolean> = combine(
-        appearanceSettingsDataStore.showChips,
-        isScrolling,
-    ) { shouldShowChips, isScrolling ->
-        shouldShowChips && !isScrolling
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), true)
+    // The buttons stay visible while scrolling; only the setting hides them
+    val shouldShowChipToggle: StateFlow<Boolean> = appearanceSettingsDataStore.showChips
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), true)
 
     private val chatAtBottom = MutableStateFlow<Map<UserName, Boolean>>(emptyMap())
 

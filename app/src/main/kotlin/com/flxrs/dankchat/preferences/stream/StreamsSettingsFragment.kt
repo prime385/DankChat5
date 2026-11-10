@@ -138,6 +138,12 @@ private fun StreamsSettings(
                 isChecked = settings.showStreamExtensions,
                 onClick = { onInteraction(StreamsSettingsInteraction.ShowStreamExtensions(it)) },
             )
+            SwitchPreferenceItem(
+                title = stringResource(R.string.preference_fullscreen_on_stream_start_title),
+                summary = stringResource(R.string.preference_fullscreen_on_stream_start_summary),
+                isChecked = settings.fullscreenOnStreamStart,
+                onClick = { onInteraction(StreamsSettingsInteraction.FullscreenOnStreamStart(it)) },
+            )
 
             val activity = LocalActivity.current
             val pipAvailable = remember {

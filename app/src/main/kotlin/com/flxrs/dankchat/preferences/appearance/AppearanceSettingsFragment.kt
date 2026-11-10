@@ -249,11 +249,11 @@ private fun ComponentsCategory(
             onDragFinished = { onInteraction(AppearanceSettingsInteraction.LayoutAnimation(layoutAnimation.roundToInt())) },
             summary = stringResource(R.string.preference_layout_animation_summary, layoutAnimation.roundToInt()),
         )
-        var fadeDelay by remember(buttonFadeDelaySeconds) { mutableFloatStateOf(buttonFadeDelaySeconds.toFloat()) }
+        var fadeDelay by remember(buttonFadeDelaySeconds) { mutableFloatStateOf(buttonFadeDelaySeconds.coerceIn(1, 10).toFloat()) }
         SliderPreferenceItem(
             title = stringResource(R.string.preference_button_fade_delay_title),
             value = fadeDelay,
-            range = 1f..60f,
+            range = 1f..10f,
             isEnabled = showChips,
             onDrag = { fadeDelay = it },
             onDragFinished = { onInteraction(AppearanceSettingsInteraction.ButtonFadeDelay(fadeDelay.roundToInt())) },

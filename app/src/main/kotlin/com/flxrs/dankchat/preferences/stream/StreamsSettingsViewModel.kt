@@ -29,6 +29,7 @@ class StreamsSettingsViewModel(
                 is StreamsSettingsInteraction.PreventStreamReloads -> dataStore.update { it.copy(preventStreamReloads = interaction.value) }
                 is StreamsSettingsInteraction.EnablePiP            -> dataStore.update { it.copy(enablePiP = interaction.value) }
                 is StreamsSettingsInteraction.ShowStreamExtensions -> dataStore.update { it.copy(showStreamExtensions = interaction.value) }
+                is StreamsSettingsInteraction.FullscreenOnStreamStart -> dataStore.update { it.copy(fullscreenOnStreamStart = interaction.value) }
             }
         }
     }
@@ -41,4 +42,5 @@ sealed interface StreamsSettingsInteraction {
     data class PreventStreamReloads(val value: Boolean) : StreamsSettingsInteraction
     data class EnablePiP(val value: Boolean) : StreamsSettingsInteraction
     data class ShowStreamExtensions(val value: Boolean) : StreamsSettingsInteraction
+    data class FullscreenOnStreamStart(val value: Boolean) : StreamsSettingsInteraction
 }

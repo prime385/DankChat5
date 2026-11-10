@@ -156,6 +156,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.flxrs.dankchat.preferences.appearance.AppearanceSettingsDataStore
+import com.flxrs.dankchat.preferences.stream.StreamsSettingsDataStore
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -180,6 +181,7 @@ class MainFragment : Fragment() {
     private val developerSettingsDataStore: DeveloperSettingsDataStore by inject()
     private val toolsSettingsDataStore: ToolsSettingsDataStore by inject()
     private val appearanceSettingsDataStore: AppearanceSettingsDataStore by inject()
+    private val streamsSettingsDataStore: StreamsSettingsDataStore by inject()
     private val notificationsSettingsDataStore: NotificationsSettingsDataStore by inject()
     private val dankChatPreferences: DankChatPreferenceStore by inject()
     private val navController: NavController by lazy { findNavController() }
@@ -418,7 +420,7 @@ class MainFragment : Fragment() {
             updateToggleButtonAlpha()
         }
         idleJob = viewLifecycleOwner.lifecycleScope.launch {
-            delay(appearanceSettingsDataStore.current().buttonFadeDelaySeconds.coerceIn(1, 60) * 1000L)
+            delay(appearanceSettingsDataStore.current().buttonFadeDelaySeconds.coerceIn(1, 10) * 1000L)
             isIdle = true
             updateToggleButtonAlpha()
         }
@@ -531,8 +533,11 @@ class MainFragment : Fragment() {
                 animateNextLayoutChange()
                 val wasStreamActive = mainViewModel.isStreamActive
                 mainViewModel.toggleStream()
-                // The stream button toggles fullscreen along with the stream: on enters it, off leaves it
-                if (wasStreamActive == mainViewModel.isFullscreen) {
+                // Turning the stream off leaves fullscreen; turning it on enters it if enabled in Settings > Streams
+                val isFullscreen = mainViewModel.isFullscreen
+                val enterFullscreen = !wasStreamActive && !isFullscreen && streamsSettingsDataStore.current().fullscreenOnStreamStart
+                val leaveFullscreen = wasStreamActive && isFullscreen
+                if (enterFullscreen || leaveFullscreen) {
                     mainViewModel.toggleFullscreen()
                 }
                 root.requestApplyInsets()

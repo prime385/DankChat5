@@ -6,7 +6,6 @@ import android.app.PictureInPictureParams
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.drawable.Drawable
 import android.widget.ArrayAdapter
@@ -712,6 +711,10 @@ class MainFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         mainViewModel.resumeStreamData()
+        (activity as? MainActivity)?.enterPictureInPictureOnLeave = false
+        // Picture-in-picture callbacks can arrive late or out of order; re-check once things settle
+        // so the chat never stays hidden behind a full-size player
+        bindingRef?.root?.post { bindingRef?.updatePictureInPictureVisibility() }
         changeActionBarVisibility(mainViewModel.isFullscreenFlow.value)
         bindingRef?.updatePictureInPictureVisibility()
 
@@ -1161,21 +1164,14 @@ class MainFragment : Fragment() {
             return
         }
 
-        // Keep a running stream playing in a small window instead of stopping it in the background
-        if (mainViewModel.isStreamActive && !isInPictureInPictureMode && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            activity.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
-        ) {
-            runCatching {
-                activity.enterPictureInPictureMode(
-                    PictureInPictureParams.Builder()
-                        .setAspectRatio(Rational(16, 9))
-                        .build()
-                )
-            }
-        }
+        // Keep a running stream playing in a small window: the other app is opened first, and DankChat
+        // shrinks into picture-in-picture when Android reports it is leaving the screen (onUserLeaveHint)
+        val mainActivity = activity as? MainActivity
+        mainActivity?.enterPictureInPictureOnLeave = mainViewModel.isStreamActive && !isInPictureInPictureMode
 
         launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         runCatching { startActivity(launchIntent) }.onFailure {
+            mainActivity?.enterPictureInPictureOnLeave = false
             Toast.makeText(activity, R.string.app_switch_not_found, Toast.LENGTH_LONG).show()
         }
     }

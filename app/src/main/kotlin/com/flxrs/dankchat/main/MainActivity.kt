@@ -6,7 +6,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.app.PictureInPictureParams
+import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Rational
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
@@ -57,6 +60,26 @@ class MainActivity : AppCompatActivity() {
     var notificationService: NotificationService? = null
     var isBound = false
     var channelToOpen: UserName? = null
+
+    // Set by the app switch button right before it opens another app while a stream is playing
+    var enterPictureInPictureOnLeave = false
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (!enterPictureInPictureOnLeave) {
+            return
+        }
+        enterPictureInPictureOnLeave = false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+            runCatching {
+                enterPictureInPictureMode(
+                    PictureInPictureParams.Builder()
+                        .setAspectRatio(Rational(16, 9))
+                        .build()
+                )
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val isTrueDarkModeEnabled = viewModel.isTrueDarkModeEnabled

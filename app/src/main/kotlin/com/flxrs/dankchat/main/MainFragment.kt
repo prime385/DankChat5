@@ -213,7 +213,14 @@ class MainFragment : Fragment() {
             mainViewModel.setActiveChannel(newChannel)
         }
 
-        override fun onPageScrollStateChanged(state: Int) = closeInputSheets()
+        override fun onPageScrollStateChanged(state: Int) {
+            closeInputSheets()
+            // After a swipe settles the tab bar refreshes its own tab colours one last time;
+            // re-apply the live green (and bold) right after that
+            if (state == ViewPager2.SCROLL_STATE_IDLE) {
+                bindingRef?.tabs?.post { applyLiveTabColors() }
+            }
+        }
     }
 
     private val menuProvider = object : MenuProvider {

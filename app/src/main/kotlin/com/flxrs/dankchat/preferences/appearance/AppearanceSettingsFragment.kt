@@ -160,6 +160,7 @@ private fun AppearanceSettings(
                 buttonFadeDelaySeconds = settings.buttonFadeDelaySeconds,
                 buttonOpacityPercent = settings.buttonOpacityPercent,
                 buttonIdleOpacityPercent = settings.buttonIdleOpacityPercent,
+                tabSwitchSpeed = settings.tabSwitchSpeed,
                 showChangelogs = settings.showChangelogs,
                 onInteraction = onInteraction,
             )
@@ -176,6 +177,7 @@ private fun ComponentsCategory(
     buttonFadeDelaySeconds: Int,
     buttonOpacityPercent: Int,
     buttonIdleOpacityPercent: Int,
+    tabSwitchSpeed: Float,
     showChangelogs: Boolean,
     onInteraction: (AppearanceSettingsInteraction) -> Unit,
 ) {
@@ -231,6 +233,17 @@ private fun ComponentsCategory(
             onDrag = { fadeDelay = it },
             onDragFinished = { onInteraction(AppearanceSettingsInteraction.ButtonFadeDelay(fadeDelay.roundToInt())) },
             summary = stringResource(R.string.preference_button_fade_delay_summary, fadeDelay.roundToInt()),
+        )
+        var switchSpeed by remember(tabSwitchSpeed) { mutableFloatStateOf(tabSwitchSpeed) }
+        SliderPreferenceItem(
+            title = stringResource(R.string.preference_tab_switch_speed_title),
+            value = switchSpeed,
+            range = 0.5f..3f,
+            steps = 9,
+            displayValue = false,
+            onDrag = { switchSpeed = (it * 4).roundToInt() / 4f },
+            onDragFinished = { onInteraction(AppearanceSettingsInteraction.TabSwitchSpeed(switchSpeed)) },
+            summary = stringResource(R.string.preference_tab_switch_speed_summary, switchSpeed),
         )
         SwitchPreferenceItem(
             title = stringResource(R.string.preference_show_changelogs),

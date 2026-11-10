@@ -7,6 +7,8 @@
     <string name="preference_button_fade_delay_title" translatable="false">Fade buttons when idle</string>
     <string name="preference_button_fade_delay_summary" translatable="false">Fade the buttons after %1$d seconds without touching the screen, while the chat is following live messages</string>
     <string name="preference_button_opacity_title" translatable="false">Button opacity</string>
+    <string name="preference_tab_switch_speed_title" translatable="false">Channel switch speed</string>
+    <string name="preference_tab_switch_speed_summary" translatable="false">%1$.2fx the original slide speed when tapping a channel tab</string>
     <string name="preference_button_opacity_summary" translatable="false">%1$d%%</string>
     <string name="preference_button_idle_opacity_title" translatable="false">Faded button opacity</string>
     <string name="preference_button_idle_opacity_summary" translatable="false">%1$d%% when faded</string>

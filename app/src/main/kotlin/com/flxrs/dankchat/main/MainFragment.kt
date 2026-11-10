@@ -155,6 +155,7 @@ import java.io.IOException
 import java.net.URL
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 
 class MainFragment : Fragment() {
 
@@ -320,15 +321,32 @@ class MainFragment : Fragment() {
         override fun onTabReselected(tab: TabLayout.Tab?) = Unit
     }
 
+    // Same timing as Android's default slide (LinearSmoothScroller: 25 ms per inch, decelerating),
+    // divided by the speed chosen in Settings > Appearance
+    private fun tabSlideDuration(distancePx: Float): Long {
+        val densityDpi = resources.displayMetrics.densityDpi.coerceAtLeast(1)
+        val originalMs = distancePx * 25f / densityDpi / 0.3356f
+        val speed = appearanceSettingsDataStore.current().tabSwitchSpeed.coerceIn(0.5f, 3f)
+        return (originalMs / speed).roundToLong().coerceAtLeast(1L)
+    }
+
     private fun slideToPage(pager: ViewPager2, target: Int) {
         tabSwitchAnimator?.cancel()
         if (pager.isFakeDragging) pager.endFakeDrag()
 
-        val distance = target - pager.currentItem
+        if (target == pager.currentItem) return
         val pageWidth = pager.width
-        if (distance == 0) return
-        if (abs(distance) > MAX_ANIMATED_TAB_DISTANCE || pageWidth == 0 || !pager.beginFakeDrag()) {
-            // Far away: jump straight there
+        if (pageWidth == 0) {
+            pager.setCurrentItem(target, false)
+            return
+        }
+        // Like the original: far tabs jump close first, then slide the last few channels
+        if (abs(target - pager.currentItem) > MAX_ANIMATED_TAB_DISTANCE) {
+            val sign = if (target > pager.currentItem) 1 else -1
+            pager.setCurrentItem(target - sign * MAX_ANIMATED_TAB_DISTANCE, false)
+        }
+        val distance = target - pager.currentItem
+        if (!pager.beginFakeDrag()) {
             pager.setCurrentItem(target, false)
             return
         }
@@ -339,8 +357,8 @@ class MainFragment : Fragment() {
         var draggedPx = 0f
         var cancelled = false
         tabSwitchAnimator = ValueAnimator.ofFloat(0f, totalPx).apply {
-            duration = TAB_SLIDE_BASE_MS + (abs(distance) - 1) * TAB_SLIDE_EXTRA_PAGE_MS
-            interpolator = DecelerateInterpolator(2f)
+            duration = tabSlideDuration(totalPx)
+            interpolator = DecelerateInterpolator()
             addUpdateListener {
                 val value = it.animatedValue as Float
                 if (pager.isFakeDragging) {
@@ -1806,8 +1824,6 @@ class MainFragment : Fragment() {
     companion object {
         private const val DISABLED_GUIDELINE_PERCENT = 0f
         private const val MAX_ANIMATED_TAB_DISTANCE = 3
-        private const val TAB_SLIDE_BASE_MS = 120L
-        private const val TAB_SLIDE_EXTRA_PAGE_MS = 40L
         private const val TOGGLE_BUTTON_DISABLED_FACTOR = 0.43f // greyed-out stream button: e.g. 70% -> 30%
         private const val TOGGLE_FADE_DURATION_MS = 300L
         private const val DEFAULT_GUIDELINE_PERCENT = 0.6f

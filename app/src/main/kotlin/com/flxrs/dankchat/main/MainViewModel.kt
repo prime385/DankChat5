@@ -364,14 +364,16 @@ class MainViewModel(
         shouldShowChips && !isScrolling
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), true)
 
-    // A stream can be toggled when the active channel is live, or a stream is already open
+    // A stream can be toggled when the active channel is live, or a stream is already open.
+    // Checking whether a channel is live needs a login, so when logged out it can always be toggled.
     val isStreamAvailable: StateFlow<Boolean> =
         combine(
             activeChannel,
             _currentStreamedChannel,
-            streamData
-        ) { activeChannel, currentStream, streamData ->
-            activeChannel != null && (currentStream != null || streamData.find { it.channel == activeChannel } != null)
+            streamData,
+            dankChatPreferenceStore.isLoggedInFlow(),
+        ) { activeChannel, currentStream, streamData, isLoggedIn ->
+            activeChannel != null && (currentStream != null || !isLoggedIn || streamData.find { it.channel == activeChannel } != null)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeout = 5.seconds), false)
 
     val useCustomBackHandling: StateFlow<Boolean> = combine(isFullscreenFlow, inputSheetState, fullScreenSheetState) { isFullscreen, inputSheetState, chatSheetState ->

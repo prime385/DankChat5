@@ -156,6 +156,19 @@ class DankChatPreferenceStore(
         awaitClose { dankChatPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 
+    fun isLoggedInFlow(): Flow<Boolean> = callbackFlow {
+        send(isLoggedIn)
+
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == LOGGED_IN_KEY || key == null) {
+                trySend(isLoggedIn)
+            }
+        }
+
+        dankChatPreferences.registerOnSharedPreferenceChangeListener(listener)
+        awaitClose { dankChatPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     fun setRenamedChannel(channelWithRename: ChannelWithRename) {
         withChannelRenames {
             when (channelWithRename.rename) {

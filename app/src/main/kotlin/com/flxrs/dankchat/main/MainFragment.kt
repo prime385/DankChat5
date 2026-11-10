@@ -145,6 +145,14 @@ import kotlin.math.roundToInt
 class MainFragment : Fragment() {
 
     private val mainViewModel: MainViewModel by viewModel()
+    private val streamWebViewModel: StreamWebViewModel by viewModel()
+
+    // Last chat split the user dragged to, kept within the same limits as dragging allows
+    private val savedGuidelinePercent: Float
+        get() = streamWebViewModel.splitFraction
+            .takeIf { it.isFinite() }
+            ?.coerceIn(MIN_GUIDELINE_PERCENT, MAX_GUIDELINE_PERCENT)
+            ?: DEFAULT_GUIDELINE_PERCENT
     private val dankChatViewModel: DankChatViewModel by activityViewModel()
     private val chatSettingsDataStore: ChatSettingsDataStore by inject()
     private val developerSettingsDataStore: DeveloperSettingsDataStore by inject()
@@ -364,6 +372,13 @@ class MainFragment : Fragment() {
                         true
                     }
 
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        val guideline = splitGuideline ?: return@setOnTouchListener false
+                        val percent = (guideline.layoutParams as ConstraintLayout.LayoutParams).guidePercent
+                        streamWebViewModel.setSplitFraction(percent.coerceIn(MIN_GUIDELINE_PERCENT, MAX_GUIDELINE_PERCENT))
+                        true
+                    }
+
                     else                    -> false
                 }
             }
@@ -477,7 +492,7 @@ class MainFragment : Fragment() {
                 binding.splitGuideline?.updateLayoutParams<ConstraintLayout.LayoutParams> {
                     guidePercent = when {
                         isActive && isInPictureInPictureMode -> PIP_GUIDELINE_PERCENT
-                        isActive                             -> DEFAULT_GUIDELINE_PERCENT
+                        isActive                             -> savedGuidelinePercent
                         else                                 -> DISABLED_GUIDELINE_PERCENT
                     }
                 }
@@ -1340,7 +1355,7 @@ class MainFragment : Fragment() {
                 guidePercent = when {
                     !mainViewModel.isStreamActive -> DISABLED_GUIDELINE_PERCENT
                     isInPictureInPicture          -> PIP_GUIDELINE_PERCENT
-                    else                          -> DEFAULT_GUIDELINE_PERCENT
+                    else                          -> savedGuidelinePercent
                 }
             }
         }

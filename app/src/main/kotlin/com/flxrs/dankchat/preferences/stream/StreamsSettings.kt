@@ -9,4 +9,5 @@ data class StreamsSettings(
     val showStreamCategory: Boolean = false,
     val preventStreamReloads: Boolean = true,
     val enablePiP: Boolean = false,
+    val splitFraction: Float = 0.6f,
 )

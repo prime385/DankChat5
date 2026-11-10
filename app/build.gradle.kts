@@ -70,7 +70,8 @@ android {
         }
         getByName("debug") {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            manifestPlaceholders["applicationLabel"] = "@string/app_name"
+            manifestPlaceholders["applicationLabel"] = "@string/app_name_custom"
+            applicationIdSuffix = ".custom"
         }
         create("dank") {
             initWith(getByName("debug"))

@@ -3,9 +3,11 @@ package com.flxrs.dankchat.main
 import android.annotation.SuppressLint
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.flxrs.dankchat.data.UserName
 import com.flxrs.dankchat.main.stream.StreamWebView
 import com.flxrs.dankchat.preferences.stream.StreamsSettingsDataStore
+import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
 
 @KoinViewModel
@@ -48,6 +50,15 @@ class StreamWebViewModel(
 
         lastStreamedChannel = channel
         webView.setStream(channel)
+    }
+
+    val splitFraction: Float
+        get() = streamsSettingsDataStore.current().splitFraction
+
+    fun setSplitFraction(fraction: Float) {
+        viewModelScope.launch {
+            streamsSettingsDataStore.update { it.copy(splitFraction = fraction) }
+        }
     }
 
     override fun onCleared() {

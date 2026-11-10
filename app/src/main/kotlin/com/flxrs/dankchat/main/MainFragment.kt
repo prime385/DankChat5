@@ -68,6 +68,10 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
+import android.view.animation.DecelerateInterpolator
 import com.flxrs.dankchat.BuildConfig
 import com.flxrs.dankchat.DankChatViewModel
 import com.flxrs.dankchat.R
@@ -149,6 +153,7 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.io.File
 import java.io.IOException
 import java.net.URL
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 class MainFragment : Fragment() {
@@ -298,6 +303,65 @@ class MainFragment : Fragment() {
         override fun onTabReselected(tab: TabLayout.Tab?) = Unit
     }
     private var coloredLiveChannels: Set<UserName> = emptySet()
+
+    // Tapping a tab slides to that channel with a quick simulated swipe (ViewPager2's public fake-drag API)
+    private var tabSwitchAnimator: ValueAnimator? = null
+    private val fastTabSwitchListener = object : TabLayout.OnTabSelectedListener {
+        override fun onTabSelected(tab: TabLayout.Tab?) {
+            tab ?: return
+            val pager = bindingRef?.chatViewpager ?: return
+            val target = tab.position
+            // Selection caused by swiping or by code that already moved the pager
+            if (target == pager.currentItem) return
+            slideToPage(pager, target)
+        }
+
+        override fun onTabUnselected(tab: TabLayout.Tab?) = Unit
+        override fun onTabReselected(tab: TabLayout.Tab?) = Unit
+    }
+
+    private fun slideToPage(pager: ViewPager2, target: Int) {
+        tabSwitchAnimator?.cancel()
+        if (pager.isFakeDragging) pager.endFakeDrag()
+
+        val distance = target - pager.currentItem
+        val pageWidth = pager.width
+        if (distance == 0) return
+        if (abs(distance) > MAX_ANIMATED_TAB_DISTANCE || pageWidth == 0 || !pager.beginFakeDrag()) {
+            // Far away: jump straight there
+            pager.setCurrentItem(target, false)
+            return
+        }
+
+        val isRtl = pager.layoutDirection == View.LAYOUT_DIRECTION_RTL
+        val direction = if (isRtl) 1f else -1f
+        val totalPx = abs(distance) * pageWidth.toFloat()
+        var draggedPx = 0f
+        var cancelled = false
+        tabSwitchAnimator = ValueAnimator.ofFloat(0f, totalPx).apply {
+            duration = TAB_SLIDE_BASE_MS + (abs(distance) - 1) * TAB_SLIDE_EXTRA_PAGE_MS
+            interpolator = DecelerateInterpolator(2f)
+            addUpdateListener {
+                val value = it.animatedValue as Float
+                if (pager.isFakeDragging) {
+                    pager.fakeDragBy(direction * (value - draggedPx) * if (distance > 0) 1f else -1f)
+                }
+                draggedPx = value
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    if (pager.isFakeDragging) pager.endFakeDrag()
+                    // Safety net in case the drag ended between pages
+                    if (!cancelled && pager.currentItem != target) pager.setCurrentItem(target, false)
+                }
+
+                override fun onAnimationCancel(animation: Animator) {
+                    cancelled = true
+                }
+            })
+            start()
+        }
+    }
 
     // Buttons fade further after a while without touches, while the chat is following live messages
     private var isIdle = false
@@ -636,8 +700,12 @@ class MainFragment : Fragment() {
             }
         }
         tabLayoutMediator.attach()
+        // The mediator's own tab listener plays the slow default slide; replace it with a quicker one.
+        // The mediator still keeps the tabs in sync with the chat pages.
+        binding.tabs.clearOnTabSelectedListeners()
         binding.tabs.addOnTabSelectedListener(tabSelectionListener)
         binding.tabs.addOnTabSelectedListener(liveTabColorListener)
+        binding.tabs.addOnTabSelectedListener(fastTabSwitchListener)
 
         (requireActivity() as AppCompatActivity).apply {
             setSupportActionBar(binding.toolbar)
@@ -807,6 +875,8 @@ class MainFragment : Fragment() {
     override fun onDestroyView() {
         binding.tabs.removeOnTabSelectedListener(tabSelectionListener)
         binding.tabs.removeOnTabSelectedListener(liveTabColorListener)
+        binding.tabs.removeOnTabSelectedListener(fastTabSwitchListener)
+        tabSwitchAnimator?.cancel()
         binding.chatViewpager.unregisterOnPageChangeCallback(pageChangeCallback)
         inputBottomSheetBehavior?.removeBottomSheetCallback(inputSheetCallback)
         fullscreenBottomSheetBehavior?.removeBottomSheetCallback(fullScreenSheetCallback)
@@ -1735,6 +1805,9 @@ class MainFragment : Fragment() {
 
     companion object {
         private const val DISABLED_GUIDELINE_PERCENT = 0f
+        private const val MAX_ANIMATED_TAB_DISTANCE = 3
+        private const val TAB_SLIDE_BASE_MS = 120L
+        private const val TAB_SLIDE_EXTRA_PAGE_MS = 40L
         private const val TOGGLE_BUTTON_DISABLED_FACTOR = 0.43f // greyed-out stream button: e.g. 70% -> 30%
         private const val TOGGLE_FADE_DURATION_MS = 300L
         private const val DEFAULT_GUIDELINE_PERCENT = 0.6f

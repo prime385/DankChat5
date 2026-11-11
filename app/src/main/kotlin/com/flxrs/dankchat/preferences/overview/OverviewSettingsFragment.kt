@@ -2,7 +2,9 @@ package com.flxrs.dankchat.preferences.overview
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
@@ -82,6 +84,11 @@ class OverviewSettingsFragment : Fragment() {
 
     private val navController: NavController by lazy { findNavController() }
 
+    private companion object {
+        const val MAX_DEVICE_NAME_LENGTH = 12
+        val MARKETING_NAME_PROPERTIES = listOf("ro.product.marketname", "ro.product.vendor.marketname", "ro.config.marketing_name")
+    }
+
     private val dankChatPreferences: DankChatPreferenceStore by inject()
     private val settingsBackupManager: SettingsBackupManager by inject()
 
@@ -138,6 +145,39 @@ class OverviewSettingsFragment : Fragment() {
         }
     }
 
+    // yyyy-mm-dd__(manufacturer)-(name)__DankChatCustomSettings.json, e.g. 2026-11-11__NVIDIA-SHIELD Andro__DankChatCustomSettings.json
+    private fun buildExportFileName(): String {
+        val manufacturer = Build.MANUFACTURER.orEmpty().cleanForFileName()
+        var name = deviceDisplayName().cleanForFileName()
+        if (manufacturer.isNotEmpty() && name.startsWith(manufacturer, ignoreCase = true)) {
+            name = name.drop(manufacturer.length).trimStart(' ', '-', '_')
+        }
+        if (name.isEmpty()) name = Build.MODEL.orEmpty().cleanForFileName()
+        name = name.take(MAX_DEVICE_NAME_LENGTH).trimEnd(' ', '-', '_', '.')
+        val device = listOf(manufacturer, name).filter { it.isNotEmpty() }.joinToString("-")
+        return "${LocalDate.now()}__${device}__DankChatCustomSettings.json"
+    }
+
+    // Prefers the public name: the device name from Android's settings, then a brand's marketing name, then the model
+    private fun deviceDisplayName(): String {
+        val settingsName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+            runCatching { Settings.Global.getString(requireContext().contentResolver, Settings.Global.DEVICE_NAME) }.getOrNull()
+        } else {
+            null
+        }
+        val marketingName = MARKETING_NAME_PROPERTIES.firstNotNullOfOrNull { key ->
+            runCatching {
+                Class.forName("android.os.SystemProperties").getMethod("get", String::class.java).invoke(null, key) as? String
+            }.getOrNull()?.takeIf { it.isNotBlank() }
+        }
+        return listOf(settingsName, marketingName, Build.MODEL).firstOrNull { !it.isNullOrBlank() }.orEmpty()
+    }
+
+    private fun String.cleanForFileName(): String = this
+        .filterNot { it in "/\\:*?\"<>|" || it.isISOControl() }
+        .replace(Regex("\\s+"), " ")
+        .trim()
+
     // Channels and lists are loaded at startup, so the app restarts to apply the imported backup
     private fun restartApp() {
         val context = requireContext().applicationContext
@@ -165,7 +205,7 @@ class OverviewSettingsFragment : Fragment() {
                         hasChangelog = DankChatVersion.HAS_CHANGELOG,
                         onBackPressed = { navController.popBackStack() },
                         onNavigateRequested = { navigateSafe(it) },
-                        onExportRequested = { exportLauncher.launch("dankchat-settings-${LocalDate.now()}.json") },
+                        onExportRequested = { exportLauncher.launch(buildExportFileName()) },
                         onImportRequested = { importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
                         onLogoutRequested = {
                             with(navController) {
